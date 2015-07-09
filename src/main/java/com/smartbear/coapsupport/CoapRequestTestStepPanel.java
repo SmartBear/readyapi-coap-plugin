@@ -48,22 +48,23 @@ import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 
-public class CoapRequestTestStepPanel extends AbstractHttpXmlRequestDesktopPanel<CoapRequestTestStep, CoapRequest> {
-
+public class CoapRequestTestStepPanel extends HttpTestRequestDesktopPanel {
+    private CoapRequestTestStep testStep;
 
     public CoapRequestTestStepPanel(CoapRequestTestStep modelItem) {
-        super(modelItem, modelItem.getRequest());
+        super(modelItem);
     }
 
-    @Override
-    protected ModelItemXmlEditor<?, ?> buildRequestEditor() {
-        return new CoapRequestEditor(getRequest());
-    }
+//    @Override
+//    protected ModelItemXmlEditor<?, ?> buildRequestEditor() {
+//        return new CoapRequestEditor(getRequest());
+//    }
+//
+//    @Override
+//    protected ModelItemXmlEditor<?, ?> buildResponseEditor() {        return new CoapResponseEditor(getRequest());
+//    }
 
-    @Override
-    protected ModelItemXmlEditor<?, ?> buildResponseEditor() {
-        return new CoapResponseEditor(getRequest());
-    }
+    private CoapRequestTestStep getTestStep(){return (CoapRequestTestStep) getModelItem();}
 
     @Override
     protected String getHelpUrl() {
@@ -71,9 +72,9 @@ public class CoapRequestTestStepPanel extends AbstractHttpXmlRequestDesktopPanel
     }
 
     @Override
-    protected void insertButtons(JXToolBar toolbar) {
+    protected void addToolbarComponents(JXToolBar toolbar) {
         JCheckBox conf = new JCheckBox("Confirmable Request");
-        Bindings.bind(conf, new PropertyAdapter<CoapRequest>(getModelItem().getRequest(), "confirmable"));
+        Bindings.bind(conf, new PropertyAdapter<CoapRequest>(getTestStep().getRequest(), "confirmable"));
         toolbar.add(conf);
     }
 

@@ -8,9 +8,11 @@ import com.eviware.soapui.config.TestStepConfig;
 import com.eviware.soapui.impl.rest.support.RestParamProperty;
 import com.eviware.soapui.impl.wsdl.testcase.WsdlTestCase;
 import com.eviware.soapui.impl.wsdl.teststeps.HttpTestRequest;
+import com.eviware.soapui.impl.wsdl.teststeps.HttpTestRequestStep;
 import com.eviware.soapui.impl.wsdl.teststeps.WsdlTestStepResult;
 import com.eviware.soapui.impl.wsdl.teststeps.WsdlTestStepWithProperties;
 import com.eviware.soapui.model.ModelItem;
+import com.eviware.soapui.model.support.TestStepBeanProperty;
 import com.eviware.soapui.model.testsuite.TestCaseRunContext;
 import com.eviware.soapui.model.testsuite.TestCaseRunner;
 import com.eviware.soapui.model.testsuite.TestProperty;
@@ -25,31 +27,20 @@ import org.apache.xmlbeans.XmlObject;
 import javax.xml.namespace.QName;
 
 @PluginTestStep(typeName = "CoapRequestTestStep", name = "CoAP Request", description = "Sends a request using the CoAP protocol.", iconPath = "com/smartbear/coapsupport/coap_request_step.png")
-public class CoapRequestTestStep extends WsdlTestStepWithProperties {
-
-
-    private CoapRequest request;
-    private HttpRequestConfig httpRequestConfig;
+public class CoapRequestTestStep extends HttpTestRequestStep {
 
     public CoapRequestTestStep(WsdlTestCase testCase, TestStepConfig testStepData, boolean forLoadTest) {
-        super(testCase, testStepData, true, forLoadTest);
-        XmlObject config = testStepData.getConfig();
-        if(config == null){
-            testStepData.addNewConfig().changeType(HttpRequestConfig.type);
+        super(testCase, correctTestStepData(testStepData), forLoadTest);
 
-        }
-        httpRequestConfig = (HttpRequestConfig)testStepData.getConfig();
-        request = buildRequest(forLoadTest);
-
-        for (TestProperty property : request.getProperties().values()) {
-            addProperty(new RestTestStepProperty((RestParamProperty) property));
-        }
+        //deleteProperty("Endpoint", false);
+        deleteProperty("Username", false);
+        deleteProperty("Password", false);
+        deleteProperty("Domain", false);
     }
 
-
-    private CoapRequest buildRequest(boolean forLoadTest) {
-        return new CoapRequest(this, httpRequestConfig, forLoadTest);
-
+    @Override
+    protected HttpTestRequest buildTestRequest(boolean forLoadTest) {
+        return new CoapRequest(this, (HttpRequestConfig)getConfig().getConfig(), forLoadTest);
     }
 
     @Override
@@ -57,60 +48,12 @@ public class CoapRequestTestStep extends WsdlTestStepWithProperties {
         return new WsdlTestStepResult(this);
     }
 
-    public CoapRequest getRequest(){return request;}
+    public CoapRequest getRequest(){return (CoapRequest)getTestRequest();}
 
-    private class RestTestStepProperty implements TestStepProperty {
-        private RestParamProperty property;
-
-        public RestTestStepProperty(RestParamProperty property) {
-            this.property = property;
+    private static TestStepConfig correctTestStepData(TestStepConfig testStepData){
+        if(testStepData.getConfig() == null){
+            testStepData.addNewConfig().changeType(HttpRequestConfig.type);
         }
-
-        public TestStep getTestStep() {
-            return CoapRequestTestStep.this;
-        }
-
-        public String getName() {
-            return property.getName();
-        }
-
-        public String getDescription() {
-            return property.getDescription();
-        }
-
-        public String getValue() {
-            return property.getValue();
-        }
-
-        public String getDefaultValue() {
-            return property.getDefaultValue();
-        }
-
-        public void setValue(String value) {
-            property.setValue(value);
-        }
-
-        public boolean isReadOnly() {
-            return false;
-        }
-
-        public QName getType() {
-            return property.getType();
-        }
-
-        public ModelItem getModelItem() {
-            return getRequest();
-        }
-
-        @Override
-        public boolean isRequestPart() {
-            return true;
-        }
-
-        @Override
-        public SchemaType getSchemaType() {
-            return property.getSchemaType();
-        }
+        return testStepData;
     }
-
 }
