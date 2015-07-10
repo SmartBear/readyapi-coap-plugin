@@ -1,5 +1,6 @@
 package com.smartbear.coapsupport;
 
+import com.eviware.soapui.impl.rest.RestRequestInterface;
 import com.eviware.soapui.impl.support.components.ModelItemXmlEditor;
 import com.eviware.soapui.impl.support.http.HttpRequest;
 import com.eviware.soapui.impl.support.http.HttpRequestContentView;
@@ -7,9 +8,11 @@ import com.eviware.soapui.impl.support.http.HttpRequestInterface;
 import com.eviware.soapui.impl.support.panels.AbstractHttpXmlRequestDesktopPanel;
 import com.eviware.soapui.impl.wsdl.panels.teststeps.HttpTestRequestDesktopPanel;
 import com.eviware.soapui.impl.wsdl.teststeps.HttpTestRequestStepInterface;
+import com.eviware.soapui.impl.wsdl.teststeps.RestTestRequestInterface;
 import com.eviware.soapui.model.ModelItem;
 import com.eviware.soapui.model.iface.Request;
 import com.eviware.soapui.model.iface.Submit;
+import com.eviware.soapui.model.testsuite.Assertable;
 import com.eviware.soapui.support.ListDataChangeListener;
 import com.eviware.soapui.support.MessageSupport;
 import com.eviware.soapui.support.UISupport;
@@ -22,6 +25,7 @@ import com.eviware.soapui.support.editor.EditorView;
 import com.eviware.soapui.support.editor.views.xml.outline.XmlOutlineEditorView;
 import com.eviware.soapui.support.editor.views.xml.outline.support.XmlObjectTree;
 import com.eviware.soapui.support.log.JLogList;
+import com.eviware.soapui.ui.desktop.DesktopPanel;
 import com.eviware.soapui.ui.support.ModelItemDesktopPanel;
 import com.jgoodies.binding.PresentationModel;
 import com.jgoodies.binding.adapter.Bindings;
@@ -47,6 +51,7 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
+import java.beans.PropertyChangeEvent;
 
 public class CoapRequestTestStepPanel extends HttpTestRequestDesktopPanel {
     private CoapRequestTestStep testStep;
@@ -73,10 +78,54 @@ public class CoapRequestTestStepPanel extends HttpTestRequestDesktopPanel {
 
     @Override
     protected void addToolbarComponents(JXToolBar toolbar) {
+        JComboBox<RestRequestInterface.HttpMethod> methodCombo = new JComboBox<>();
+        Bindings.bind(methodCombo, new SelectionInList<RestRequestInterface.HttpMethod>(new RestRequestInterface.HttpMethod[]{RestRequestInterface.HttpMethod.GET, RestRequestInterface.HttpMethod.POST, RestRequestInterface.HttpMethod.PUT, RestRequestInterface.HttpMethod.DELETE}, new PropertyAdapter<CoapRequest>(getTestStep().getRequest(), "method")));
+        toolbar.addLabeledFixed("Method:", methodCombo);
+
+        JUndoableTextField endpointEdit = new JUndoableTextField(50);
+        Bindings.bind(endpointEdit, new PropertyAdapter<CoapRequest>(getTestStep().getRequest(), "endpoint"));
+        toolbar.addLabeledFixed("Request Endpoint:", endpointEdit);
+
         JCheckBox conf = new JCheckBox("Confirmable Request");
         Bindings.bind(conf, new PropertyAdapter<CoapRequest>(getTestStep().getRequest(), "confirmable"));
         toolbar.add(conf);
     }
+
+    protected void updateStatusIcon() {
+//        Assertable.AssertionStatus status = getModelItem().getTestRequest().getAssertionStatus();
+//        switch (status) {
+//            case FAILED: {
+//                assertionInspector.setIcon(UISupport.createImageIcon("/failed_assertion.png"));
+//                inspectorPanel.activate(assertionInspector);
+//                break;
+//            }
+//            case UNKNOWN: {
+//                assertionInspector.setIcon(UISupport.createImageIcon("/unknown_assertion.png"));
+//                break;
+//            }
+//            case VALID: {
+//                assertionInspector.setIcon(UISupport.createImageIcon("/valid_assertion.png"));
+//                inspectorPanel.deactivate();
+//                break;
+//            }
+//        }
+    }
+
+
+    @Override
+    public void propertyChange(PropertyChangeEvent evt) {
+        if (evt.getPropertyName().equals(RestTestRequestInterface.STATUS_PROPERTY)) {
+            updateStatusIcon();
+        }
+        if (evt.getPropertyName().equals(ModelItem.NAME_PROPERTY)) {
+            notifyPropertyChange(DesktopPanel.TITLE_PROPERTY, null, getTitle());
+        }
+
+        if (evt.getPropertyName().equals(ModelItem.ICON_PROPERTY)) {
+            notifyPropertyChange(DesktopPanel.ICON_PROPERTY, null, getIcon());
+        }
+    }
+
 
     @Override
     protected Submit doSubmit() throws Request.SubmitException {
