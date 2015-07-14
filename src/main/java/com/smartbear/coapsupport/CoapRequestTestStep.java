@@ -5,6 +5,7 @@ import com.eviware.soapui.config.HttpRequestConfig;
 import com.eviware.soapui.config.SettingConfig;
 import com.eviware.soapui.config.SettingsConfig;
 import com.eviware.soapui.config.TestStepConfig;
+import com.eviware.soapui.impl.rest.RestRequestInterface;
 import com.eviware.soapui.impl.rest.support.RestParamProperty;
 import com.eviware.soapui.impl.wsdl.testcase.WsdlTestCase;
 import com.eviware.soapui.impl.wsdl.teststeps.HttpTestRequest;
@@ -52,7 +53,9 @@ public class CoapRequestTestStep extends HttpTestRequestStep {
 
     private static TestStepConfig correctTestStepData(TestStepConfig testStepData){
         if(testStepData.getConfig() == null){
-            testStepData.addNewConfig().changeType(HttpRequestConfig.type);
+            HttpRequestConfig httpConfig = (HttpRequestConfig) testStepData.addNewConfig().changeType(HttpRequestConfig.type);
+            httpConfig.setMethod(RestRequestInterface.HttpMethod.GET.toString());
+            httpConfig.setTimeout(Integer.toString(93000)); //MAX_TRANSMIT_WAIT
         }
         return testStepData;
     }

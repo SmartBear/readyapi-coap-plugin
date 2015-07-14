@@ -9,7 +9,7 @@
             <unpack>false</unpack>
             <outputDirectory>/lib</outputDirectory>
             <includes>
-                <include>ch.ethz.inf.vs:californium</include>
+                <include>ch.ethz.inf.vs:*</include>
             </includes>
         </dependencySet>
         <dependencySet>
