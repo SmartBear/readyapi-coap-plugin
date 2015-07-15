@@ -65,6 +65,7 @@ import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.beans.PropertyChangeEvent;
+import java.lang.reflect.InvocationTargetException;
 import java.util.Date;
 
 public class CoapRequestTestStepPanel extends AbstractHttpXmlRequestDesktopPanel<CoapRequestTestStep, CoapRequest> {
@@ -261,15 +262,36 @@ public class CoapRequestTestStepPanel extends AbstractHttpXmlRequestDesktopPanel
         return result;
     }
 
+    private boolean disableMessageLogging = false;
+
     @Override
     protected void logMessages(String message, String infoMessage) {
+        if(disableMessageLogging) return;
         super.logMessages(message, infoMessage);
         logArea.addLine(DateUtil.formatFull(new Date(startTime)) + " - " + message);
     }
 
     @Override
     public void afterSubmit(Submit submit, SubmitContext context) {
-        super.afterSubmit(submit, context);
+        if (submit.getRequest() != getRequest()) {
+            return;
+        }
+        if(submit.getStatus() == Submit.Status.ERROR && submit.getError() instanceof InvocationTargetException){
+            disableMessageLogging = true;
+            try {
+                super.afterSubmit(submit, context);
+            }
+            finally {
+                disableMessageLogging = false;
+            }
+            String actualError = ((InvocationTargetException) submit.getError()).getTargetException().getMessage();
+            String msg = String.format("Error getting response: %s", actualError);
+            String infoMsg = "Error getting response for [" + submit.getRequest().getName() + "]; " + actualError;
+            logMessages(msg, infoMsg);
+        }
+        else{
+            super.afterSubmit(submit, context);
+        }
         if (!isHasClosed()) {
             updateStatusIcon();
         }

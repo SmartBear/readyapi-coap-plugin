@@ -25,10 +25,8 @@ import static com.eviware.soapui.impl.support.HttpUtils.urlEncodeWithUtf8;
 public class CoapTransport implements RequestTransport {
 
     public final static String REQUEST_CONTEXT_PROP = "CoapRequest";
-    public final static String ACKNOWLEDGED_CONTEXT_PROP = "IsCoapRequestAcknowledged";
-    public final static String STATUS_CONTEXT_PROP = "CoapSubmitStatus";
 
-    public enum SubmitStatus{InProgress, GotResponse, Rejected, Timeout, Canceled};
+//    public enum SubmitStatus{InProgress, GotResponse, Rejected, Timeout, Canceled};
     public class CoapSubmitFailureException extends RuntimeException{
         public CoapSubmitFailureException(String msg){
             super(msg);
@@ -126,23 +124,22 @@ public class CoapTransport implements RequestTransport {
         ch.ethz.inf.vs.californium.coap.Request message = new ch.ethz.inf.vs.californium.coap.Request(reqestType, request.getConfirmable() ? CoAP.Type.CON : CoAP.Type.NON);
         message.setURI(endpoint + query.toString());
         context.setProperty(REQUEST_CONTEXT_PROP, message);
-        context.setProperty(ACKNOWLEDGED_CONTEXT_PROP, false);
-        context.setProperty(STATUS_CONTEXT_PROP, SubmitStatus.InProgress);
-        CoapMessageObserver observer = new CoapMessageObserver(message, context);
-        message.addMessageObserver(observer);
+//        context.setProperty(ACKNOWLEDGED_CONTEXT_PROP, false);
+//        context.setProperty(STATUS_CONTEXT_PROP, SubmitStatus.InProgress);
+//        CoapMessageObserver observer = new CoapMessageObserver(message, context);
+//        message.addMessageObserver(observer);
 
         long startTime = System.currentTimeMillis();
         message.send();
 
         ch.ethz.inf.vs.californium.coap.Response responseMessage = message.waitForResponse(timeout);
-        long takenTime = System.currentTimeMillis() - startTime;
-        switch((SubmitStatus)context.getProperty(STATUS_CONTEXT_PROP)){
-            case Rejected: throw new CoapSubmitFailureException("Request was rejected by the recepient.");
-            case Timeout: throw new CoapSubmitFailureException("Response was not received within the timeout.");
-            case Canceled: throw new CoapSubmitFailureException("Request was canceled.");
-        }
 
-        return new CoapResp(request, responseMessage, takenTime);
+        if(message.isCanceled()) throw new CoapSubmitFailureException("Request was canceled.");
+        long takenTime = System.currentTimeMillis() - startTime;
+        if(responseMessage != null) return new CoapResp(request, responseMessage, takenTime);
+        if(message.isRejected()) throw new CoapSubmitFailureException("Request was rejected by the recepient.");
+        if(message.isTimedOut()) throw new CoapSubmitFailureException("Request was not received within the MAX_TRANSMIT_WAIT period.");
+        throw new CoapSubmitFailureException("Response was not received within the specified timeout.");
     }
 
     private void filterRequest(SubmitContext submitContext, CoapRequest coapRequest) {
@@ -183,43 +180,43 @@ public class CoapTransport implements RequestTransport {
     }
 
 
-    private class CoapMessageObserver implements MessageObserver {
-        private SubmitContext context;
-        private Request request;
-
-        public CoapMessageObserver(Request request, SubmitContext context){
-            this.context = context;
-            this.request = request;
-        }
-
-        @Override
-        public void onRetransmission() {
-
-        }
-
-        @Override
-        public void onResponse(ch.ethz.inf.vs.californium.coap.Response response) {
-            context.setProperty(STATUS_CONTEXT_PROP, SubmitStatus.GotResponse);
-        }
-
-        @Override
-        public void onAcknowledgement() {
-            context.setProperty(ACKNOWLEDGED_CONTEXT_PROP, true);
-        }
-
-        @Override
-        public void onReject() {
-            context.setProperty(STATUS_CONTEXT_PROP, SubmitStatus.Rejected);
-        }
-
-        @Override
-        public void onTimeout() {
-            context.setProperty(STATUS_CONTEXT_PROP, SubmitStatus.Timeout);
-        }
-
-        @Override
-        public void onCancel() {
-            context.setProperty(STATUS_CONTEXT_PROP, SubmitStatus.Canceled);
-        }
-    }
+//    private class CoapMessageObserver implements MessageObserver {
+//        private SubmitContext context;
+//        private Request request;
+//
+//        public CoapMessageObserver(Request request, SubmitContext context){
+//            this.context = context;
+//            this.request = request;
+//        }
+//
+//        @Override
+//        public void onRetransmission() {
+//
+//        }
+//
+//        @Override
+//        public void onResponse(ch.ethz.inf.vs.californium.coap.Response response) {
+//            context.setProperty(STATUS_CONTEXT_PROP, SubmitStatus.GotResponse);
+//        }
+//
+//        @Override
+//        public void onAcknowledgement() {
+//            context.setProperty(ACKNOWLEDGED_CONTEXT_PROP, true);
+//        }
+//
+//        @Override
+//        public void onReject() {
+//            context.setProperty(STATUS_CONTEXT_PROP, SubmitStatus.Rejected);
+//        }
+//
+//        @Override
+//        public void onTimeout() {
+//            context.setProperty(STATUS_CONTEXT_PROP, SubmitStatus.Timeout);
+//        }
+//
+//        @Override
+//        public void onCancel() {
+//            context.setProperty(STATUS_CONTEXT_PROP, SubmitStatus.Canceled);
+//        }
+//    }
 }
