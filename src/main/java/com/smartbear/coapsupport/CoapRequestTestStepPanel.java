@@ -6,6 +6,7 @@ import com.eviware.soapui.impl.support.components.ModelItemXmlEditor;
 import com.eviware.soapui.impl.support.http.HttpRequest;
 import com.eviware.soapui.impl.support.http.HttpRequestContentView;
 import com.eviware.soapui.impl.support.http.HttpRequestInterface;
+import com.eviware.soapui.impl.support.panels.AbstractHttpRequestDesktopPanel;
 import com.eviware.soapui.impl.support.panels.AbstractHttpXmlRequestDesktopPanel;
 import com.eviware.soapui.impl.wsdl.panels.teststeps.AssertionsPanel;
 import com.eviware.soapui.impl.wsdl.panels.teststeps.HttpTestRequestDesktopPanel;
@@ -366,10 +367,11 @@ public class CoapRequestTestStepPanel extends AbstractHttpXmlRequestDesktopPanel
 //    protected ModelItemXmlEditor<?, ?> buildRequestEditor() {
 //        return new CoapRequestEditor(getRequest());
 //    }
-//
-//    @Override
-//    protected ModelItemXmlEditor<?, ?> buildResponseEditor() {        return new CoapResponseEditor(getRequest());
-//    }
+
+    @Override
+    protected ModelItemXmlEditor<?, ?> buildResponseEditor() {
+        return new CoapResponseEditor(getRequest());
+    }
 
 
     class CoapRequestEditor extends HttpRequestMessageEditor{
@@ -387,17 +389,16 @@ public class CoapRequestTestStepPanel extends AbstractHttpXmlRequestDesktopPanel
         }
     }
 
-    class CoapResponseEditor extends HttpResponseMessageEditor{
+    class CoapResponseEditor extends AbstractHttpRequestDesktopPanel.AbstractHttpResponseMessageEditor{
         public CoapResponseEditor(CoapRequest request) {
-            super(request);
+            super(new CoapResponseDocument(request));
         }
 
         @Override
         public void addEditorView(EditorView editorView) {
-//            if(editorView instanceof HttpRequestContentView) return;
-//            if(editorView instanceof XmlObjectTree) return;
-//            if(editorView instanceof XmlOutlineEditorView) return;
+            if(getView(editorView.getViewId()) != null) return;
             super.addEditorView(editorView);
         }
     }
+
 }
