@@ -1,8 +1,7 @@
 package com.smartbear.coapsupport;
 
-import ch.ethz.inf.vs.californium.CoapResponse;
 import ch.ethz.inf.vs.californium.coap.CoAP;
-import ch.ethz.inf.vs.californium.coap.MessageObserver;
+import ch.ethz.inf.vs.californium.coap.Option;
 import ch.ethz.inf.vs.californium.coap.Request;
 import com.eviware.soapui.SoapUI;
 import com.eviware.soapui.impl.rest.support.RestParamProperty;
@@ -21,7 +20,7 @@ import java.util.List;
 
 import static com.eviware.soapui.impl.support.HttpUtils.urlEncodeWithUtf8;
 
-@PluginRequestTransport(protocol = "coap")
+//@PluginRequestTransport(protocol = "coap")
 public class CoapTransport implements RequestTransport {
 
     public final static String REQUEST_CONTEXT_PROP = "CoapRequest";
@@ -123,6 +122,26 @@ public class CoapTransport implements RequestTransport {
 
         ch.ethz.inf.vs.californium.coap.Request message = new ch.ethz.inf.vs.californium.coap.Request(reqestType, request.getConfirmable() ? CoAP.Type.CON : CoAP.Type.NON);
         message.setURI(endpoint + query.toString());
+        List<CoapOption> options = request.getOptions();
+        if(options != null) {
+            for (CoapOption option : options) {
+                for(String optionValue: option.values) {
+                    if(optionValue == null || optionValue.length() == 0) {
+                        message.getOptions().addOption(new Option(option.number));
+                    }
+                    else if(optionValue.startsWith("0x0x")){
+                        message.getOptions().addOption(new Option(option.number, optionValue.substring(2)));
+                    }
+                    else if(optionValue.startsWith("0x")){
+                        byte[] opaque = Utils.hexStringToBytes(optionValue.substring(2));
+                        message.getOptions().addOption(new Option(option.number, opaque));
+                    }
+                    else{
+                        message.getOptions().addOption(new Option(option.number, optionValue));
+                    }
+                }
+            }
+        }
         context.setProperty(REQUEST_CONTEXT_PROP, message);
 //        context.setProperty(ACKNOWLEDGED_CONTEXT_PROP, false);
 //        context.setProperty(STATUS_CONTEXT_PROP, SubmitStatus.InProgress);
@@ -136,7 +155,7 @@ public class CoapTransport implements RequestTransport {
 
         if(message.isCanceled()) throw new CoapSubmitFailureException("Request was canceled.");
         long takenTime = System.currentTimeMillis() - startTime;
-        if(responseMessage != null) return new CoapResp(request, responseMessage, takenTime);
+        if(responseMessage != null) return new CoapRespImpl(request, responseMessage, takenTime);
         if(message.isRejected()) throw new CoapSubmitFailureException("Request was rejected by the recepient.");
         if(message.isTimedOut()) throw new CoapSubmitFailureException("Request was not received within the MAX_TRANSMIT_WAIT period.");
         throw new CoapSubmitFailureException("Response was not received within the specified timeout.");

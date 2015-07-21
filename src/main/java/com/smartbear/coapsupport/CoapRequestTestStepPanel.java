@@ -363,10 +363,10 @@ public class CoapRequestTestStepPanel extends AbstractHttpXmlRequestDesktopPanel
     }
 
 
-//    @Override
-//    protected ModelItemXmlEditor<?, ?> buildRequestEditor() {
-//        return new CoapRequestEditor(getRequest());
-//    }
+    @Override
+    protected ModelItemXmlEditor<?, ?> buildRequestEditor() {
+        return new CoapRequestEditor(getRequest());
+    }
 
     @Override
     protected ModelItemXmlEditor<?, ?> buildResponseEditor() {
@@ -385,6 +385,7 @@ public class CoapRequestTestStepPanel extends AbstractHttpXmlRequestDesktopPanel
 //            if(editorView instanceof HttpRequestContentView) return;
 //            if(editorView instanceof XmlObjectTree) return;
 //            if(editorView instanceof XmlOutlineEditorView) return;
+            if(getView(editorView.getViewId()) != null) return;
             super.addEditorView(editorView);
         }
     }

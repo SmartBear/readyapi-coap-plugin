@@ -1,5 +1,6 @@
 package com.smartbear.coapsupport;
 
+import ch.ethz.inf.vs.californium.coap.Response;
 import com.eviware.soapui.model.ModelItem;
 import com.eviware.soapui.plugins.auto.PluginResponseEditorView;
 import com.eviware.soapui.support.editor.Editor;
@@ -31,6 +32,7 @@ public class CoapResponseEditorView extends AbstractXmlEditorView<CoapResponseDo
         if(scrollPane == null) {
             memo = new JTextArea();
             memo.setEditable(false);
+            memo.setText(formText());
             scrollPane = new JScrollPane(memo);
         }
         return scrollPane;
@@ -43,10 +45,30 @@ public class CoapResponseEditorView extends AbstractXmlEditorView<CoapResponseDo
 
     @Override
     public void documentUpdated(){
-       // memo.setText(formText());
+       if(memo != null) memo.setText(formText());
     }
 
     private String formText(){
-        return "";
+        if(getDocument() == null) return "";
+        Response message = getDocument().getResponseMessage();
+        if(message == null) return "";
+        StringBuilder result = new StringBuilder();
+
+        result.append("Type: ");
+        result.append(message.getType().toString());
+        result.append("\n");
+
+        result.append("Code: ");
+        result.append(message.getCode().toString());
+        result.append("\n");
+
+        result.append("Token: ");
+        result.append(message.getTokenString());
+        result.append("\n");
+
+        result.append("Message ID: ");
+        result.append(message.getMID());
+
+        return result.toString();
     }
 }

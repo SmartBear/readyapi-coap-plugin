@@ -1,6 +1,7 @@
 package com.smartbear.coapsupport;
 
 import com.eviware.soapui.SoapUI;
+import com.eviware.soapui.impl.wsdl.submit.RequestTransportRegistry;
 import com.eviware.soapui.plugins.PluginAdapter;
 import com.eviware.soapui.plugins.PluginConfiguration;
 import com.eviware.soapui.support.UISupport;
@@ -20,6 +21,7 @@ public class PluginConfig extends PluginAdapter {
     public void initialize() {
         super.initialize();
         SoapUI.getActionRegistry().addActionGroup(new CoapRequestTestStepActionGroup());
+        RequestTransportRegistry.addTransport("coap", new CoapTransport());
     }
 
 }
