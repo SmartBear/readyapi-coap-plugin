@@ -122,24 +122,21 @@ public class CoapTransport implements RequestTransport {
 
         ch.ethz.inf.vs.californium.coap.Request message = new ch.ethz.inf.vs.californium.coap.Request(reqestType, request.getConfirmable() ? CoAP.Type.CON : CoAP.Type.NON);
         message.setURI(endpoint + query.toString());
-        List<CoapOption> options = request.getOptions();
-        if(options != null) {
-            for (CoapOption option : options) {
-                for(String optionValue: option.values) {
-                    if(optionValue == null || optionValue.length() == 0) {
-                        message.getOptions().addOption(new Option(option.number));
-                    }
-                    else if(optionValue.startsWith("0x0x")){
-                        message.getOptions().addOption(new Option(option.number, optionValue.substring(2)));
-                    }
-                    else if(optionValue.startsWith("0x")){
-                        byte[] opaque = Utils.hexStringToBytes(optionValue.substring(2));
-                        message.getOptions().addOption(new Option(option.number, opaque));
-                    }
-                    else{
-                        message.getOptions().addOption(new Option(option.number, optionValue));
-                    }
-                }
+        int optionCount = request.getOptionCount();
+        for (int i = 0; i < optionCount; ++i) {
+            CoapOptionsDataSource.CoapOption option = request.getOption(i);
+            if(option.value == null || option.value.length() == 0) {
+                message.getOptions().addOption(new Option(option.number));
+            }
+            else if(option.value.startsWith("0x0x")){
+                message.getOptions().addOption(new Option(option.number, option.value.substring(2)));
+            }
+            else if(option.value.startsWith("0x")){
+                byte[] opaque = Utils.hexStringToBytes(option.value.substring(2));
+                message.getOptions().addOption(new Option(option.number, opaque));
+            }
+            else{
+                message.getOptions().addOption(new Option(option.number, option.value));
             }
         }
         context.setProperty(REQUEST_CONTEXT_PROP, message);

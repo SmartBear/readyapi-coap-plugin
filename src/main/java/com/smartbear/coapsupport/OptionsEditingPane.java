@@ -1,7 +1,7 @@
 package com.smartbear.coapsupport;
 
 import ch.ethz.inf.vs.californium.coap.OptionNumberRegistry;
-import ch.ethz.inf.vs.californium.coap.OptionSet;
+import com.eviware.soapui.SoapUI;
 import com.eviware.soapui.support.StringUtils;
 import com.eviware.soapui.support.UISupport;
 import com.eviware.soapui.support.components.JXToolBar;
@@ -14,35 +14,43 @@ import com.eviware.x.form.support.ADialogBuilder;
 
 import javax.swing.AbstractAction;
 import javax.swing.Action;
-import javax.swing.BoxLayout;
 import javax.swing.ImageIcon;
 import javax.swing.JComponent;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
 import javax.swing.table.AbstractTableModel;
+import javax.swing.table.TableCellEditor;
+import javax.swing.table.TableCellRenderer;
 import java.awt.BorderLayout;
-import java.awt.Component;
 import java.awt.event.ActionEvent;
-import java.util.ArrayList;
+import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
-import java.util.Comparator;
-import java.util.Iterator;
-import java.util.List;
-import java.util.TreeSet;
+import java.util.HashMap;
 
 public class OptionsEditingPane extends JPanel {
+    private final ImageIcon moveDownIcon;
+    private final ImageIcon moveUpIcon;
     private OptionsTableModel tableModel;
     private ImageIcon addIcon;
     private ImageIcon deleteIcon;
     private JXToolBar toolBar;
-    private boolean editable;
+    private boolean editable = false;
+    private DeleteOptionAction deleteOptionAction;
+    private AddOptionAction addOptionAction;
+    private OptionsTable grid;
+    private MoveOptionUpAction moveOptionUpAction;
+    private MoveOptionDownAction moveOptionDownAction;
 
 
     public OptionsEditingPane(){
         super();
         addIcon = UISupport.createImageIcon("com/eviware/soapui/resources/images/add.png");
         deleteIcon = UISupport.createImageIcon("com/eviware/soapui/resources/images/delete.png");
+        moveDownIcon = UISupport.createImageIcon("com/eviware/soapui/resources/images/down_arrow.gif");
+        moveUpIcon = UISupport.createImageIcon("com/eviware/soapui/resources/images/up_arrow.gif");
         buildUI();
     }
 
@@ -54,23 +62,40 @@ public class OptionsEditingPane extends JPanel {
 
     private JComponent buildToolbar(){
         toolBar = UISupport.createToolbar();
-        toolBar.add(new AddOptionAction());
-        toolBar.add(new DeleteOptionAction());
+        addOptionAction = new AddOptionAction();
+        toolBar.add(UISupport.createActionButton(addOptionAction, editable && getData() != null));
+        deleteOptionAction = new DeleteOptionAction();
+        toolBar.add(UISupport.createActionButton(deleteOptionAction, shouldDeleteOptionActionBeEnabled()));
+        moveOptionUpAction = new MoveOptionUpAction();
+        toolBar.add(UISupport.createActionButton(moveOptionUpAction, shouldDeleteOptionActionBeEnabled()));
+        moveOptionDownAction = new MoveOptionDownAction();
+        toolBar.add(UISupport.createActionButton(moveOptionDownAction, shouldDeleteOptionActionBeEnabled()));
         return toolBar;
+    }
+
+    private boolean shouldDeleteOptionActionBeEnabled(){
+        return editable && getData() != null && grid.getSelectedRows() != null && grid.getSelectedRows().length != 0;
     }
 
     private JComponent buildGrid(){
         tableModel = new OptionsTableModel();
-        JTable grid = new JTable(tableModel);
+        grid = new OptionsTable(tableModel);
+        grid.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
+            @Override
+            public void valueChanged(ListSelectionEvent e) {
+                deleteOptionAction.setEnabled(shouldDeleteOptionActionBeEnabled());
+            }
+        });
 
         return new JScrollPane(grid);
     }
 
     public CoapOptionsDataSource getData(){return tableModel.getDataSource();}
 
-    public void setData(CoapOptionsDataSource data, boolean editable){
+    public void setData(CoapOptionsDataSource data){
         tableModel.setDataSource(data);
-        setEditable(editable);
+        addOptionAction.setEnabled(data != null && editable);
+        deleteOptionAction.setEnabled(shouldDeleteOptionActionBeEnabled());
     }
 
     public boolean isEditable(){
@@ -78,38 +103,85 @@ public class OptionsEditingPane extends JPanel {
     }
     public void setEditable(boolean newValue){
         if(newValue == isEditable()) return;
+        editable = newValue;
         tableModel.setEditable(newValue);
         toolBar.setVisible(newValue);
+        addOptionAction.setEnabled(getData() != null && editable);
+        deleteOptionAction.setEnabled(shouldDeleteOptionActionBeEnabled());
     }
 
+    private class OptionsTable extends JTable{
+        private HashMap<Class<? extends TableCellRenderer>, TableCellRenderer> renderers = new HashMap<>();
+        private HashMap<Class<? extends TableCellEditor>, TableCellEditor> editors = new HashMap<>();
+
+        public OptionsTable(OptionsTableModel tableModel){super(tableModel);}
+
+        @Override
+        public TableCellRenderer getCellRenderer(int row, int column) {
+            if(column == 1) {
+                Class<? extends TableCellRenderer> clazz = KnownOptions.getOptionRenderer(tableModel.getDataSource().getOption(row).number);
+                if(clazz == null) return super.getCellRenderer(row, column);
+                if(!renderers.containsKey(clazz)){
+                    TableCellRenderer renderer = null;
+                    try {
+                        renderer = clazz.getConstructor().newInstance();
+                    } catch (Throwable e) {
+                        SoapUI.logError(e);
+                    }
+                    renderers.put(clazz, renderer);
+                }
+                return renderers.get(clazz);
+            }
+            else{
+                return super.getCellRenderer(row, column);
+            }
+        }
+
+        @Override
+        public TableCellEditor getCellEditor(int row, int column) {
+            if(column == 1) {
+                Class<? extends TableCellEditor> clazz = KnownOptions.getOptionEditor(tableModel.getDataSource().getOption(row).number);
+                if(clazz == null) return super.getCellEditor(row, column);
+                if(!editors.containsKey(clazz)){
+                    TableCellEditor editor = null;
+                    try {
+                        editor = clazz.getConstructor().newInstance();
+                    } catch (Throwable e) {
+                        SoapUI.logError(e);
+                    }
+                    editors.put(clazz, editor);
+                }
+                return editors.get(clazz);
+            }
+            else{
+                return super.getCellEditor(row, column);
+            }
+        }
+
+    }
 
     private class OptionsTableModel extends AbstractTableModel implements CoapOptionsListener{
         private CoapOptionsDataSource dataSource;
-        private ArrayList<Integer> numbers = new ArrayList<Integer>();
-        private ArrayList<String> values = new ArrayList<>();
         private boolean editable;
         private boolean changingDataSource = false;
 
         public CoapOptionsDataSource getDataSource(){return dataSource;}
 
         public void setDataSource(CoapOptionsDataSource dataSource){
-            if(dataSource != this.dataSource) return;
+            if(dataSource == this.dataSource) return;
             if(this.dataSource != null){
                 this.dataSource.removeOptionsListener(this);
             }
             this.dataSource = dataSource;
-            if(this.dataSource == null) {
-                updateData(null);
-            }
-            else{
-                updateData(this.dataSource.getOptions());
+            if(this.dataSource != null) {
                 this.dataSource.addOptionsListener(this);
             }
+            fireTableDataChanged();
         }
 
         @Override
         public int getRowCount() {
-            return values.size();
+            return dataSource == null ? 0 : dataSource.getOptionCount();
         }
 
         @Override
@@ -120,10 +192,10 @@ public class OptionsEditingPane extends JPanel {
         @Override
         public Object getValueAt(int rowIndex, int columnIndex) {
             if(columnIndex == 0){
-                return OptionNumberRegistry.toString(numbers.get(rowIndex));
+                return OptionNumberRegistry.toString(dataSource.getOption(rowIndex).number);
             }
             else if(columnIndex == 1){
-                return values.get(rowIndex);
+                return dataSource.getOption(rowIndex).value;
             }
             throw new IllegalArgumentException();
         }
@@ -133,21 +205,7 @@ public class OptionsEditingPane extends JPanel {
             if(columnIndex != 1) throw new IllegalArgumentException();
             changingDataSource = true;
             try {
-                if(Utils.areStringsEqual((String)aValue, values.get(rowIndex), false, true)) return;
-                values.set(rowIndex, (String)aValue);
-                int startIndex = rowIndex;
-                for(; startIndex > 0; --startIndex){
-                    if(!numbers.get(startIndex - 1).equals(numbers.get(rowIndex))) break;
-                }
-                int endIndex = rowIndex;
-                for(;endIndex < values.size() - 1; ++endIndex){
-                    if(!numbers.get(endIndex + 1).equals(numbers.get(rowIndex))) break;
-                }
-                ArrayList<String> newOptionValues = new ArrayList<>();
-                for(int i = startIndex; i <= endIndex; ++i){
-                    newOptionValues.add(values.get(i));
-                }
-                dataSource.setOption(numbers.get(rowIndex), newOptionValues);
+                dataSource.setOption(rowIndex, (String)aValue);
             }
             finally {
                 changingDataSource = false;
@@ -166,72 +224,33 @@ public class OptionsEditingPane extends JPanel {
             return columnIndex == 1 && editable;
         }
 
-        @Override
-        public void onOptionChanged(int optionNumber, ChangeKind changeKind, List<String> oldValues, List<String> newValues) {
-            if(changingDataSource) return;
-            int startIndex = 0;
-            while (startIndex < numbers.size() && optionNumber < numbers.get(startIndex)) {
-                ++startIndex;
-            }
-            int removeCounter = 0;
-            for (int i = startIndex; i < numbers.size() && optionNumber == numbers.get(startIndex); ++i) {
-                ++removeCounter;
-            }
-            if (removeCounter != 0) {
-                for (int i = 0; i < removeCounter; ++i) {
-                    numbers.remove(startIndex);
-                    values.remove(startIndex);
-                }
-                fireTableRowsDeleted(startIndex, startIndex + removeCounter - 1);
-            }
-            if (newValues != null && newValues.size() != 0) {
-                for (int i = 0; i < newValues.size(); ++i) {
-                    numbers.add(startIndex + i, optionNumber);
-                    values.add(startIndex + i, newValues.get(i));
-                }
-                fireTableRowsInserted(startIndex, startIndex + newValues.size() - 1);
-            }
-        }
-
-        @Override
-        public void onWholeOptionListChanged(List<CoapOption> newList) {
-            if(changingDataSource) return;
-            updateData(newList);
-        }
-
-        private void updateData(List<CoapOption> newList) {
-            numbers.clear();
-            values.clear();
-            if(newList != null){
-                for(CoapOption option: newList){
-                    for(String value: option.values) {
-                        numbers.add(option.number);
-                        values.add(value);
-                    }
-                }
-            }
-        }
-
         public void setEditable(boolean editable) {
             this.editable = editable;
         }
 
-        public void addOption(int number, String value){
-            changingDataSource = true;
-            try {
-                int pos = 0;
-                while (pos < numbers.size() && numbers.get(pos) <= number) {
-                    ++pos;
-                }
-                numbers.add(pos, number);
-                values.add(pos, value);
-                fireTableRowsInserted(pos, pos);
-            }
-            finally {
-                changingDataSource = false;
-            }
+        @Override
+        public void onOptionChanged(int optionIndex, int oldOptionNumber, int newOptionNumber, String oldOptionValue, String newOptionValue) {
+            if(changingDataSource) return;
+            fireTableRowsUpdated(optionIndex, optionIndex);
         }
 
+        @Override
+        public void onOptionAdded(int optionIndex, int optionNumber, String optionValue) {
+            if(changingDataSource) return;
+            fireTableRowsInserted(optionIndex, optionIndex);
+        }
+
+        @Override
+        public void onOptionRemoved(int optionIndex, int oldOptionNumber, String oldOptionValue) {
+            if(changingDataSource) return;
+            fireTableRowsDeleted(optionIndex, optionIndex);
+        }
+
+        @Override
+        public void onWholeOptionListChanged() {
+            if(changingDataSource) return;
+            fireTableDataChanged();
+        }
     }
 
     private class AddOptionAction extends AbstractAction implements Action {
@@ -285,8 +304,7 @@ public class OptionsEditingPane extends JPanel {
                 });
                 if(dialog.show()){
                     int optionNumber = getOptionNumber(combo);
-                    tableModel.addOption(optionNumber, "");
-
+                    getData().addOption(optionNumber, "");
                 }
             }
             finally {
@@ -300,6 +318,34 @@ public class OptionsEditingPane extends JPanel {
             putValue(Action.SHORT_DESCRIPTION, "Remove Option");
             putValue(Action.SMALL_ICON, deleteIcon);
         }
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            int[] rows = grid.getSelectedRows();
+            Arrays.sort(rows);
+            for(int i = rows.length - 1; i >= 0; --i){
+                getData().removeOption(rows[i]);
+            }
+        }
+    }
+
+    private class MoveOptionUpAction extends AbstractAction{
+        public MoveOptionUpAction(){
+            putValue(Action.SHORT_DESCRIPTION, "Move Option Up");
+            putValue(Action.SMALL_ICON, moveUpIcon);
+        }
+
+        @Override
+        public void actionPerformed(ActionEvent e) {
+
+        }
+    }
+
+    private class MoveOptionDownAction extends AbstractAction{
+        public MoveOptionDownAction(){
+            putValue(Action.SHORT_DESCRIPTION, "Move Option Down");
+            putValue(Action.SMALL_ICON, moveDownIcon);
+        }
+
         @Override
         public void actionPerformed(ActionEvent e) {
 

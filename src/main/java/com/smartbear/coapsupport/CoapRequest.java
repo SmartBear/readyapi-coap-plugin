@@ -25,7 +25,6 @@ import java.util.List;
 public class CoapRequest extends HttpTestRequest implements CoapOptionsDataSource {
     private final static String OUR_SCHEMA = null;// "http://smartbear.com/rapi/config";
     private static final String OPTION_SECTION = "Option";
-    private static final String OPTION_VALUE_SECTION = "Value";
     private static final String OPTION_NUMBER_ATTR = "Number";
 
     private CoapRequestTestStep testStep;
@@ -109,118 +108,136 @@ public class CoapRequest extends HttpTestRequest implements CoapOptionsDataSourc
         super.updateConfig(request);
         if(optionsListeners != null){
             for(CoapOptionsListener listener: optionsListeners){
-                listener.onWholeOptionListChanged(getOptions());
+                listener.onWholeOptionListChanged();
             }
         }
     }
 
     private static String getElementText(XmlObject obj){
+        return getElementText((Element) obj.getDomNode());
+    }
+
+    private static String getElementText(Element element){
         String result = "";
-        Node child = (Element)obj.getDomNode().getFirstChild();
-        do{
-            if(child.getNodeType() == Node.TEXT_NODE){
-                result += ((Text)child).getWholeText();
+        Node child = element.getFirstChild();
+        while (child != null){
+           if(child.getNodeType() == Node.TEXT_NODE){
+                result += child.getNodeValue();
             }
             child = child.getNextSibling();
-        }
-        while (child != null);
+        };
         return result;
     }
 
-    private ArrayList<String> readOptionValues(XmlObject optionSection){
-        ArrayList<String> result = new ArrayList<String>();
-        XmlObject[] valueSections = optionSection.selectPath("$this/" + OPTION_VALUE_SECTION);
-        if(valueSections != null){
-            for(XmlObject valueSection: valueSections){
-                valueSection.getDomNode().getNodeValue();
-                result.add(getElementText(valueSection));
-            }
-        }
-        return result;
-
-    }
-
-    public List<CoapOption> getOptions(){
+    @Override
+    public int getOptionCount() {
         XmlObject[] optionSections = getConfig().selectPath("$this/" + OPTION_SECTION);
-        ArrayList<CoapOption> result = new ArrayList<>();
-        if(optionSections == null) return result;
-        for(XmlObject optionSection: optionSections){
-            String optionNumberStr = ((Element) optionSection.getDomNode()).getAttribute(OPTION_NUMBER_ATTR);
-            int optionNumber;
-            try {
-                optionNumber = Integer.parseInt(optionNumberStr);
-            } catch (NumberFormatException e) {
-                SoapUI.logError(e, String.format("Incorrect data (\"%s\") in the %s test step", optionNumberStr, getName()));
-                continue;
-            }
-            CoapOption option = new CoapOption(optionNumber);
-            option.values = readOptionValues(optionSection);
-            result.add(option);
-        }
-        Collections.sort(result, new Comparator<CoapOption>() {
-            @Override
-            public int compare(CoapOption o1, CoapOption o2) {
-                if(o1.number == o2.number) SoapUI.log(String.format("Incorrect data (%d option is duplicated) in the %s test step", o1.number, getName()));
-                return o1.number - o2.number;
-            }
-        });
-        return result;
+        return optionSections.length;
     }
 
-    public void setOption(int optionNumber, List<String> optionValues){
-        CoapOptionsListener.ChangeKind change = null;
-        XmlObject[] optionSections = getConfig().selectPath("$this/" + OPTION_SECTION + "[@" + OPTION_NUMBER_ATTR + "=\'" + Integer.toString(optionNumber) + "\']");
-        ArrayList<String> oldValues = null;
-        if(optionSections == null) {
-            if(optionValues == null) return;
-            change = CoapOptionsListener.ChangeKind.Added;
+    @Override
+    public CoapOption getOption(int optionIndex) {
+        XmlObject[] optionSections = getConfig().selectPath("$this/" + OPTION_SECTION);
+        Element optionSection = (Element) optionSections[optionIndex].getDomNode();
+        String optionNumberStr = optionSection.getAttribute(OPTION_NUMBER_ATTR);
+        int optionNumber;
+        try {
+            optionNumber = Integer.parseInt(optionNumberStr);
+        } catch (NumberFormatException e) {
+            SoapUI.logError(e, String.format("Incorrect data (\"%s\") in the %s test step", optionNumberStr, getName()));
+            return null;
         }
-        else{
-            oldValues = readOptionValues(optionSections[0]);
-            if(optionValues != null){
-                if(oldValues.size() == optionValues.size()){
-                    boolean noChanges = true;
-                    for(int i = 0; i < oldValues.size(); ++i){
-                        if(!Utils.areStringsEqual(oldValues.get(i), optionValues.get(i), false, true)){
-                            noChanges = false;
-                            break;
-                        }
-                    }
-                    if(noChanges) return;
-                }
-            }
-            getConfig().getDomNode().removeChild(optionSections[0].getDomNode());
-        }
-        if(optionValues == null) {
-            change = CoapOptionsListener.ChangeKind.Removed;
-        }
-        else{
-            Document document = getConfig().getDomNode().getOwnerDocument();
-            Element newSection = document.createElement(OPTION_SECTION);
-            newSection.setAttribute(OPTION_NUMBER_ATTR, Integer.toString(optionNumber));
-            for(String value: optionValues){
-                Element newValueSection = document.createElement(OPTION_VALUE_SECTION);
-                Text valueNode = document.createTextNode(value);
-                newValueSection.appendChild(valueNode);
-                newSection.appendChild(newValueSection);
-            }
-            getConfig().getDomNode().appendChild(newSection);
-            if(change != CoapOptionsListener.ChangeKind.Added) change = CoapOptionsListener.ChangeKind.ValueChanged;
-        }
+        CoapOption option = new CoapOption(optionNumber, getElementText(optionSection));
+        return option;
+
+    }
+
+    @Override
+    public void setOption(int optionIndex, String optionValue) {
+        CoapOption oldOption = getOption(optionIndex);
+        if(Utils.areStringsEqual(oldOption.value, optionValue, false, true)) return;
+
+        Document document = getConfig().getDomNode().getOwnerDocument();
+        Element newOptionSection = document.createElement(OPTION_SECTION);
+        newOptionSection.setAttribute(OPTION_NUMBER_ATTR, Integer.toString(oldOption.number));
+        Text valueNode = document.createTextNode(optionValue);
+        newOptionSection.appendChild(valueNode);
+
+        XmlObject[] optionSections = getConfig().selectPath("$this/" + OPTION_SECTION);
+        getConfig().getDomNode().replaceChild(newOptionSection, optionSections[optionIndex].getDomNode());
+        Element optionSection = (Element) optionSections[optionIndex].getDomNode();
+
         if(optionsListeners != null){
             for(CoapOptionsListener listener: optionsListeners){
-                listener.onOptionChanged(optionNumber, change, oldValues, optionValues);
+                listener.onOptionChanged(optionIndex, oldOption.number, oldOption.number, oldOption.value, optionValue);
             }
         }
-
     }
 
-    public void addOption(int optionNumber, List<String> optionValues){
-        setOption(optionNumber, optionValues);
+    @Override
+    public int addOption(int optionNumber, String optionValue) {
+        Element newOptionSection = getConfig().getDomNode().getOwnerDocument().createElement(OPTION_SECTION);
+        newOptionSection.setAttribute(OPTION_NUMBER_ATTR, Integer.toString(optionNumber));
+        if(optionValue != null && optionValue.length() != 0) {
+            Text textValue = getConfig().getDomNode().getOwnerDocument().createTextNode(optionValue);
+            newOptionSection.appendChild(textValue);
+        }
+
+        XmlObject[] optionSections = getConfig().selectPath("$this/" + OPTION_SECTION);
+        int pos;
+        Element optionSection = null;
+        for(pos = 0; pos < optionSections.length; ++pos){
+            optionSection = (Element) optionSections[pos].getDomNode();
+            String optionNumberStr = optionSection.getAttribute(OPTION_NUMBER_ATTR);
+            int curOptionNumber;
+            try {
+                curOptionNumber = Integer.parseInt(optionNumberStr);
+            } catch (NumberFormatException e) {
+                SoapUI.logError(e, String.format("Incorrect data (\"%s\") in the %s test step", optionNumberStr, getName()));
+                return -1;
+            }
+            if(optionNumber > curOptionNumber) break;
+        }
+        if(pos == optionSections.length) getConfig().getDomNode().appendChild(newOptionSection); else getConfig().getDomNode().insertBefore(newOptionSection, optionSection);
+        if(optionsListeners != null){
+            for(CoapOptionsListener listener: optionsListeners){
+                listener.onOptionAdded(pos, optionNumber, optionValue);
+            }
+        }
+        return pos;
     }
 
-    public void removeOption(int optionNumber){
-        setOption(optionNumber, null);
+    @Override
+    public void removeOption(int optionIndex) {
+        CoapOption oldOption = getOption(optionIndex);
+        XmlObject[] optionSections = getConfig().selectPath("$this/" + OPTION_SECTION);
+        getConfig().getDomNode().removeChild(optionSections[optionIndex].getDomNode());
+        if(optionsListeners != null){
+            for(CoapOptionsListener listener: optionsListeners){
+                listener.onOptionRemoved(optionIndex, oldOption.number, oldOption.value);
+            }
+        }
+    }
+
+
+    @Override
+    public void moveOption(int optionIndex, int delta) {
+        CoapOption oldOption = getOption(optionIndex);
+        XmlObject[] optionSections = getConfig().selectPath("$this/" + OPTION_SECTION);
+        Node movedSection = optionSections[optionIndex].getDomNode();
+        getConfig().getDomNode().removeChild(movedSection);
+        if(optionsListeners != null){
+            for(CoapOptionsListener listener: optionsListeners){
+                listener.onOptionRemoved(optionIndex, oldOption.number, oldOption.value);
+            }
+        }
+        int newIndex = optionIndex + delta;
+        if(newIndex == optionSections.length - 1) getConfig().getDomNode().appendChild(movedSection); else getConfig().getDomNode().insertBefore(movedSection,optionSections[newIndex + 1].getDomNode());
+        if(optionsListeners != null){
+            for(CoapOptionsListener listener: optionsListeners){
+                listener.onOptionAdded(optionIndex, oldOption.number, oldOption.value);
+            }
+        }
     }
 
 

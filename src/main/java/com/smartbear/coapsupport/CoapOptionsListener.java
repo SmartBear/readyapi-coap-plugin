@@ -3,7 +3,8 @@ package com.smartbear.coapsupport;
 import java.util.List;
 
 public interface CoapOptionsListener {
-    enum ChangeKind{Added, ValueChanged, Removed};
-    void onOptionChanged(int optionNumber, ChangeKind changeKind, List<String> oldValues, List<String> newValues);
-    void onWholeOptionListChanged(List<CoapOption> newList);
+    void onOptionChanged(int optionIndex, int oldOptionNumber, int newOptionNumber, String oldOptionValue, String newOptionValue);
+    void onOptionAdded(int optionIndex, int optionNumber, String optionValue);
+    void onOptionRemoved(int optionIndex, int oldOptionNumber, String oldOptionValue);
+    void onWholeOptionListChanged();
 }
