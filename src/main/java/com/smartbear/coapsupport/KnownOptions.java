@@ -2,19 +2,17 @@ package com.smartbear.coapsupport;
 
 import ch.ethz.inf.vs.californium.coap.MediaTypeRegistry;
 import ch.ethz.inf.vs.californium.coap.OptionNumberRegistry;
+
 import com.eviware.soapui.support.StringUtils;
 
 import javax.swing.AbstractCellEditor;
-import javax.swing.DefaultCellEditor;
 import javax.swing.JComboBox;
 import javax.swing.JTable;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.TableCellEditor;
 import javax.swing.table.TableCellRenderer;
 import java.awt.Component;
-import java.lang.reflect.Array;
 
-import static ch.ethz.inf.vs.californium.coap.MediaTypeRegistry.*;
 
 public class KnownOptions {
 
@@ -58,6 +56,7 @@ public class KnownOptions {
                 setText(rawValue);
                 return;
             }
+            if(MediaTypeRegistry.getAllMediaTypes().contains(number)) setText(MediaTypeRegistry.toString(number)); else setText(rawValue);
         }
     }
 
@@ -66,9 +65,10 @@ public class KnownOptions {
         private String initialValue;
 
         public MediaTypeOptionEditor(){
-            String[] mediaTypeItems = new String[knownMediaTypes.length];
-            for(int i = 0; i < mediaTypeItems.length; ++i){
-                mediaTypeItems[i] = MediaTypeRegistry.toString(knownMediaTypes[i]);
+            String[] mediaTypeItems = new String[MediaTypeRegistry.getAllMediaTypes().size()];
+            int i = 0;
+            for(int mediaType: MediaTypeRegistry.getAllMediaTypes()){
+                mediaTypeItems[i++] = MediaTypeRegistry.toString(mediaType);
             }
             comboBox = new JComboBox<String>(mediaTypeItems);
             comboBox.setEditable(true);
@@ -90,12 +90,11 @@ public class KnownOptions {
                         throw new IllegalArgumentException();
                     }
                     if (mediaType < 0 || mediaType >= 0x10000) throw new IllegalArgumentException();
-                    comboBox.setSelectedItem(rawValue);
-                    for (int i = 0; i < knownMediaTypes.length; ++i) {
-                        if (knownMediaTypes[i] == mediaType) {
-                            comboBox.setSelectedIndex(i);
-                            break;
-                        }
+                    if(MediaTypeRegistry.getAllMediaTypes().contains(mediaType)){
+                        comboBox.setSelectedItem(MediaTypeRegistry.toString(mediaType));
+                    }
+                    else{
+                        comboBox.setSelectedItem("0x" + Integer.toString(mediaType, 16));
                     }
                 } else {
                     throw new IllegalArgumentException();
@@ -109,7 +108,7 @@ public class KnownOptions {
             String value = (String) comboBox.getSelectedItem();
             if(StringUtils.isNullOrEmpty(value)) return initialValue;
             value = value.trim();
-            if(comboBox.getSelectedIndex() >= 0) return "0x" + Integer.toString(knownMediaTypes[comboBox.getSelectedIndex()]);
+            if(comboBox.getSelectedIndex() >= 0) return "0x" + Integer.toString(MediaTypeRegistry.parse((String) comboBox.getSelectedItem()), 16);
             int radix = 10;
             if(value.startsWith("0x")){
                 radix = 16;
@@ -125,30 +124,5 @@ public class KnownOptions {
             return "0x" + Integer.toString(mediaType, 16);
         }
     }
-
-    public static final int[] knownMediaTypes = {
-        TEXT_PLAIN,
-        TEXT_XML,
-        TEXT_CSV,
-        TEXT_HTML,
-        IMAGE_GIF,
-        IMAGE_JPEG,
-        IMAGE_PNG,
-        IMAGE_TIFF,
-        AUDIO_RAW,
-        VIDEO_RAW,
-        APPLICATION_LINK_FORMAT,
-        APPLICATION_XML,
-        APPLICATION_OCTET_STREAM,
-        APPLICATION_RDF_XML,
-        APPLICATION_SOAP_XML,
-        APPLICATION_ATOM_XML,
-        APPLICATION_XMPP_XML,
-        APPLICATION_EXI,
-        APPLICATION_FASTINFOSET,
-        APPLICATION_SOAP_FASTINFOSET,
-        APPLICATION_JSON,
-        APPLICATION_X_OBIX_BINARY
-    };
 
 }
