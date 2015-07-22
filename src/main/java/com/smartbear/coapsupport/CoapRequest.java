@@ -165,7 +165,6 @@ public class CoapRequest extends HttpTestRequest implements CoapOptionsDataSourc
 
         XmlObject[] optionSections = getConfig().selectPath("$this/" + OPTION_SECTION);
         getConfig().getDomNode().replaceChild(newOptionSection, optionSections[optionIndex].getDomNode());
-        Element optionSection = (Element) optionSections[optionIndex].getDomNode();
 
         if(optionsListeners != null){
             for(CoapOptionsListener listener: optionsListeners){
