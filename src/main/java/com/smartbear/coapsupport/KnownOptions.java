@@ -48,15 +48,19 @@ public class KnownOptions {
         @Override
         protected void setValue(Object value) {
             String rawValue = (String) value;
-            int number;
-            try{
-                number = Integer.parseInt(rawValue, 16);
+            if(rawValue != null && rawValue.startsWith("0x")) {
+                int number;
+                try {
+                    number = Integer.parseInt(rawValue.substring(2), 16);
+                } catch (NumberFormatException ignored) {
+                    setText(rawValue);
+                    return;
+                }
+                if(MediaTypeRegistry.getAllMediaTypes().contains(number)) setText(MediaTypeRegistry.toString(number)); else setText(rawValue);
             }
-            catch (NumberFormatException ignored){
+            else{
                 setText(rawValue);
-                return;
             }
-            if(MediaTypeRegistry.getAllMediaTypes().contains(number)) setText(MediaTypeRegistry.toString(number)); else setText(rawValue);
         }
     }
 
@@ -65,9 +69,10 @@ public class KnownOptions {
         private String initialValue;
 
         public MediaTypeOptionEditor(){
-            String[] mediaTypeItems = new String[MediaTypeRegistry.getAllMediaTypes().size()];
+            String[] mediaTypeItems = new String[MediaTypeRegistry.getAllMediaTypes().size() - 1];
             int i = 0;
             for(int mediaType: MediaTypeRegistry.getAllMediaTypes()){
+                if(mediaType == MediaTypeRegistry.UNDEFINED) continue;
                 mediaTypeItems[i++] = MediaTypeRegistry.toString(mediaType);
             }
             comboBox = new JComboBox<String>(mediaTypeItems);
@@ -105,7 +110,7 @@ public class KnownOptions {
 
         @Override
         public Object getCellEditorValue(){
-            String value = (String) comboBox.getSelectedItem();
+            String value = (String) comboBox.getEditor().getItem();
             if(StringUtils.isNullOrEmpty(value)) return initialValue;
             value = value.trim();
             if(comboBox.getSelectedIndex() >= 0) return "0x" + Integer.toString(MediaTypeRegistry.parse((String) comboBox.getSelectedItem()), 16);
