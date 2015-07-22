@@ -86,6 +86,8 @@ public class OptionsEditingPane extends JPanel {
                 deleteOptionAction.setEnabled(shouldDeleteOptionActionBeEnabled());
             }
         });
+        grid.putClientProperty("terminateEditOnFocusLost", Boolean.TRUE);
+        grid.setRowHeight(25);
 
         return new JScrollPane(grid);
     }
