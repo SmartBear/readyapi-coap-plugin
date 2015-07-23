@@ -5,9 +5,11 @@ import com.eviware.soapui.SoapUI;
 import com.eviware.soapui.support.StringUtils;
 import com.eviware.soapui.support.UISupport;
 import com.eviware.soapui.support.components.JXToolBar;
+import com.eviware.soapui.support.editor.Editor;
 import com.eviware.x.form.ValidationMessage;
 import com.eviware.x.form.XFormDialog;
 import com.eviware.x.form.XFormField;
+import com.eviware.x.form.XFormFieldListener;
 import com.eviware.x.form.XFormFieldValidator;
 import com.eviware.x.form.XFormOptionsField;
 import com.eviware.x.form.support.ADialogBuilder;
@@ -19,12 +21,14 @@ import javax.swing.JComponent;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTable;
+import javax.swing.JTextField;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import javax.swing.table.AbstractTableModel;
 import javax.swing.table.TableCellEditor;
 import javax.swing.table.TableCellRenderer;
 import java.awt.BorderLayout;
+import java.awt.Component;
 import java.awt.event.ActionEvent;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
@@ -253,9 +257,21 @@ public class OptionsEditingPane extends JPanel {
             if(changingDataSource) return;
             fireTableDataChanged();
         }
+
+        public boolean hasOption(int optionNumber) {
+            if(dataSource == null) return false;
+            int rowCount = dataSource.getOptionCount();
+            for(int i = 0; i < rowCount; i++){
+                if(dataSource.getOption(i).number == optionNumber) return true;
+            }
+            return false;
+        }
     }
 
     private class AddOptionAction extends AbstractAction implements Action {
+        private Component valueEditingComponent;
+        private TableCellEditor editor;
+
         public AddOptionAction(){
             super();
             putValue(Action.SHORT_DESCRIPTION, "Add Option");
@@ -286,27 +302,75 @@ public class OptionsEditingPane extends JPanel {
 
         @Override
         public void actionPerformed(ActionEvent e) {
+            valueEditingComponent = null;
             XFormDialog dialog = ADialogBuilder.buildDialog(ChooseOptionNumberForm.class);
             try{
+                final XFormField valueField = dialog.getFormField(ChooseOptionNumberForm.VALUE);
+                final JTextField dummyValueComponent = new JTextField(20);
+                valueField.setProperty("component", dummyValueComponent);
+                dummyValueComponent.setEnabled(false);
+                valueField.setProperty("preferredSize", dummyValueComponent.getPreferredSize());
+
                 final XFormOptionsField combo = (XFormOptionsField) dialog.getFormField(ChooseOptionNumberForm.OPTION);
-                String[] optionNames = KnownOptions.getEditableRequestOptionsNames();
+                final String[] optionNames = KnownOptions.getEditableRequestOptionsNames();
                 String[] comboItems = new String[KnownOptions.editableRequestOptions.length + 1];
                 System.arraycopy(optionNames, 0, comboItems, 1, optionNames.length);
                 combo.setOptions(comboItems);
                 combo.addFormFieldValidator(new XFormFieldValidator() {
-                    private ValidationMessage[] getError(){
-                        return new ValidationMessage[]{new ValidationMessage("Please type a valid positive decimal or hexadecimal number (starting from 0x) or choose an option from the list.", combo)};
-                    }
-
                     @Override
                     public ValidationMessage[] validateField(XFormField formField) {
-                        if(getOptionNumber(combo) <= 0) return getError();
+                        int optionNumber = getOptionNumber(combo);
+                        if(optionNumber <= 0) return new ValidationMessage[]{new ValidationMessage("Please type a valid positive decimal or hexadecimal number (starting from 0x) or choose an option from the list.", combo)};
+                        if(OptionNumberRegistry.isSingleValue(optionNumber) && tableModel.hasOption(optionNumber)) return new ValidationMessage[]{new ValidationMessage("Unable to add this option because it is already specified and it does not allow multiple values", combo)};
+                        if(editor != null){
+                            String value = (String) editor.getCellEditorValue();
+                            if(value == null || value.length() == 0) return new ValidationMessage[]{new ValidationMessage("Please input a valid option value", valueField)};
+                        }
                         return new ValidationMessage[0];
+                    }
+                });
+                combo.addFormFieldListener(new XFormFieldListener() {
+                    @Override
+                    public void valueChanged(XFormField sourceField, String newValue, String oldValue) {
+                        int optionNumber = getOptionNumber(combo);
+                        if(optionNumber <= 0){
+                            dummyValueComponent.setEnabled(false);
+                            dummyValueComponent.setText("");
+                            valueEditingComponent = dummyValueComponent;
+                            editor = null;
+                        }
+                        else{
+                            Class<? extends TableCellEditor> clazz = KnownOptions.getOptionEditor(optionNumber);
+                            if(clazz == null){
+                                dummyValueComponent.setEnabled(true);
+                                dummyValueComponent.setText("");
+                                valueEditingComponent = dummyValueComponent;
+                                editor = null;
+                            }
+                            else {
+                                try {
+                                    editor = clazz.getConstructor().newInstance();
+                                }
+                                catch(Throwable e){
+                                    return;
+                                }
+                                valueEditingComponent = editor.getTableCellEditorComponent(null, null, true, -1, -1);
+                            }
+                        }
+                        valueField.setProperty("component", valueEditingComponent);
+                        valueField.setProperty("preferredSize", valueEditingComponent.getPreferredSize());
                     }
                 });
                 if(dialog.show()){
                     int optionNumber = getOptionNumber(combo);
-                    getData().addOption(optionNumber, "");
+                    String value;
+                    if(editor != null) {
+                        value = (String) editor.getCellEditorValue();
+                    }
+                    else{
+                        value = dummyValueComponent.getText();
+                    }
+                    getData().addOption(optionNumber, value);
                 }
             }
             finally {
@@ -354,15 +418,6 @@ public class OptionsEditingPane extends JPanel {
         }
     }
 
-//    private OptionSet coapOptions;
-//
-//    public OptionSet getCoapOptions() {
-//        return coapOptions;
-//    }
-//
-//    public void setCoapOptions(OptionSet coapOptions) {
-//        this.coapOptions = coapOptions;
-//    }
 
 
 }

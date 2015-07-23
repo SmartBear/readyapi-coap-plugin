@@ -16,7 +16,7 @@ import java.awt.Component;
 
 public class KnownOptions {
 
-    public static int[] editableRequestOptions = {OptionNumberRegistry.ACCEPT, OptionNumberRegistry.CONTENT_TYPE};
+    public static int[] editableRequestOptions = {OptionNumberRegistry.ACCEPT, OptionNumberRegistry.CONTENT_TYPE, OptionNumberRegistry.ETAG};
 
     public static String[] getEditableRequestOptionsNames(){
         String[] result = new String[editableRequestOptions.length];
@@ -25,6 +25,7 @@ public class KnownOptions {
         }
         return result;
     }
+
 
     public static Class<? extends TableCellRenderer> getOptionRenderer(int optionNumber){
         switch (optionNumber){
