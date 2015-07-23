@@ -5,7 +5,6 @@ import com.eviware.soapui.SoapUI;
 import com.eviware.soapui.support.StringUtils;
 import com.eviware.soapui.support.UISupport;
 import com.eviware.soapui.support.components.JXToolBar;
-import com.eviware.soapui.support.editor.Editor;
 import com.eviware.x.form.ValidationMessage;
 import com.eviware.x.form.XFormDialog;
 import com.eviware.x.form.XFormField;
@@ -30,7 +29,6 @@ import javax.swing.table.TableCellRenderer;
 import java.awt.BorderLayout;
 import java.awt.Component;
 import java.awt.event.ActionEvent;
-import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.HashMap;
 
@@ -69,15 +67,16 @@ public class OptionsEditingPane extends JPanel {
         addOptionAction = new AddOptionAction();
         toolBar.add(UISupport.createActionButton(addOptionAction, editable && getData() != null));
         deleteOptionAction = new DeleteOptionAction();
-        toolBar.add(UISupport.createActionButton(deleteOptionAction, shouldDeleteOptionActionBeEnabled()));
+        toolBar.add(UISupport.createActionButton(deleteOptionAction, isActionOnSelectedOptionAllowed()));
         moveOptionUpAction = new MoveOptionUpAction();
-        toolBar.add(UISupport.createActionButton(moveOptionUpAction, shouldDeleteOptionActionBeEnabled()));
+        toolBar.add(UISupport.createActionButton(moveOptionUpAction, isActionOnSelectedOptionAllowed()));
         moveOptionDownAction = new MoveOptionDownAction();
-        toolBar.add(UISupport.createActionButton(moveOptionDownAction, shouldDeleteOptionActionBeEnabled()));
+        toolBar.add(UISupport.createActionButton(moveOptionDownAction, isActionOnSelectedOptionAllowed()));
+        toolBar.setVisible(isEditable());
         return toolBar;
     }
 
-    private boolean shouldDeleteOptionActionBeEnabled(){
+    private boolean isActionOnSelectedOptionAllowed(){
         return editable && getData() != null && grid.getSelectedRows() != null && grid.getSelectedRows().length != 0;
     }
 
@@ -87,7 +86,7 @@ public class OptionsEditingPane extends JPanel {
         grid.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
             @Override
             public void valueChanged(ListSelectionEvent e) {
-                deleteOptionAction.setEnabled(shouldDeleteOptionActionBeEnabled());
+                deleteOptionAction.setEnabled(isActionOnSelectedOptionAllowed());
             }
         });
         grid.putClientProperty("terminateEditOnFocusLost", Boolean.TRUE);
@@ -101,7 +100,7 @@ public class OptionsEditingPane extends JPanel {
     public void setData(CoapOptionsDataSource data){
         tableModel.setDataSource(data);
         addOptionAction.setEnabled(data != null && editable);
-        deleteOptionAction.setEnabled(shouldDeleteOptionActionBeEnabled());
+        deleteOptionAction.setEnabled(isActionOnSelectedOptionAllowed());
     }
 
     public boolean isEditable(){
@@ -113,7 +112,7 @@ public class OptionsEditingPane extends JPanel {
         tableModel.setEditable(newValue);
         toolBar.setVisible(newValue);
         addOptionAction.setEnabled(getData() != null && editable);
-        deleteOptionAction.setEnabled(shouldDeleteOptionActionBeEnabled());
+        deleteOptionAction.setEnabled(isActionOnSelectedOptionAllowed());
     }
 
     private class OptionsTable extends JTable{

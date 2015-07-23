@@ -49,19 +49,23 @@ public class KnownOptions {
         @Override
         protected void setValue(Object value) {
             String rawValue = (String) value;
-            if(rawValue != null && rawValue.startsWith("0x")) {
-                int number;
+            int number;
+            if(rawValue == null || rawValue.length() == 0){
+                number = 0;
+            }
+            else if(rawValue.startsWith("0x")) {
                 try {
                     number = Integer.parseInt(rawValue.substring(2), 16);
                 } catch (NumberFormatException ignored) {
                     setText(rawValue);
                     return;
                 }
-                if(MediaTypeRegistry.getAllMediaTypes().contains(number)) setText(MediaTypeRegistry.toString(number)); else setText(rawValue);
             }
             else{
                 setText(rawValue);
+                return;
             }
+            if(MediaTypeRegistry.getAllMediaTypes().contains(number)) setText(MediaTypeRegistry.toString(number)); else setText(rawValue);
         }
     }
 
@@ -85,7 +89,7 @@ public class KnownOptions {
             String rawValue = (String) valueObject;
             initialValue = rawValue;
             if (rawValue == null || rawValue.length() == 0) {
-                comboBox.setSelectedItem(null);
+                comboBox.setSelectedItem(MediaTypeRegistry.toString(0));
             } else {
                 rawValue = rawValue.trim();
                 if (rawValue.startsWith("0x")) {

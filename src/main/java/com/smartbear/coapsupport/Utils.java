@@ -1,5 +1,7 @@
 package com.smartbear.coapsupport;
 
+import ch.ethz.inf.vs.californium.coap.CoAP;
+
 public class Utils {
     public static boolean areStringsEqual(String s1, String s2, boolean caseInsensitive, boolean dontDistinctNullAndEmpty){
         if(dontDistinctNullAndEmpty) {
@@ -41,4 +43,32 @@ public class Utils {
         return result;
     }
 
+    public static String responseCodeToText(int code){
+        switch (code){
+            case 201: return "Created";
+            case 202: return "Deleted";
+            case 203: return "Valid";
+            case 204: return "Changed";
+            case 205: return "Content";
+            case 231: return "Continue";
+            case 400: return "Bad Request";
+            case 401: return "Unauthorized";
+            case 402: return "Bad Option";
+            case 403: return "Forbidden";
+            case 404: return "Not Found";
+            case 405: return "Method Not Allowed";
+            case 406: return "Not Acceptable";
+            case 408: return "Request Entity Incomplete";
+            case 412: return "Precondition Failed";
+            case 413: return "Request Entity Too Large";
+            case 415: return "Unsupported Content-Format";
+            case 500: return "Internal Server Error";
+            case 501: return "Not Implemented";
+            case 502: return "Bad Gateway";
+            case 503: return "Service Unavailable";
+            case 504: return "Gateway Timeout";
+            case 505: return "Proxying Not Supported";
+        }
+        return "";
+    }
 }

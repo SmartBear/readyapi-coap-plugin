@@ -388,6 +388,12 @@ public class CoapRequestTestStepPanel extends AbstractHttpXmlRequestDesktopPanel
             if(getView(editorView.getViewId()) != null) return;
             super.addEditorView(editorView);
         }
+
+        @Override
+        protected void createMissingInspectors() {
+
+        }
+
     }
 
     class CoapResponseEditor extends AbstractHttpRequestDesktopPanel.AbstractHttpResponseMessageEditor{
@@ -399,6 +405,11 @@ public class CoapRequestTestStepPanel extends AbstractHttpXmlRequestDesktopPanel
         public void addEditorView(EditorView editorView) {
             if(getView(editorView.getViewId()) != null) return;
             super.addEditorView(editorView);
+        }
+
+        @Override
+        protected void createMissingInspectors() {
+
         }
     }
 

@@ -47,14 +47,14 @@ public class CoapRequestEditorView extends AbstractXmlEditorView<AbstractHttpXml
 //            paramsTable.setPreferredSize(new Dimension(500, 400));
 //            paramsTable.setMinimumSize(new Dimension(500, 400));
 //            paramsTable.setPreferredSize(new Dimension(Integer.MAX_VALUE, 400));
-            Expander paramsExpander = new Expander("Query Parameters", paramsTable, false, 200, 400);
+            Expander paramsExpander = new Expander("Query Parameters", paramsTable, false, 200, 250);
             //paramsExpander.setFont(paramsExpander.getFont().deriveFont(Font.BOLD));
             mainPanel.add(paramsExpander, new GridBagConstraints(0, 0, 1, 1, 0, 0, GridBagConstraints.NORTHWEST, GridBagConstraints.HORIZONTAL, new Insets(4, 4, 4, 4), 0, 0));
 
             OptionsEditingPane optionsEditor = new OptionsEditingPane();
             optionsEditor.setData(request);
             optionsEditor.setEditable(true);
-            final Expander optionsExpander = new Expander("Options", optionsEditor, true, 200, 400);
+            final Expander optionsExpander = new Expander("Options", optionsEditor, true, 200, 250);
           //  optionsExpander.setFont(paramsExpander.getFont().deriveFont(Font.BOLD));
             mainPanel.add(optionsExpander, new GridBagConstraints(0, 1, 1, 1, 0, 0, GridBagConstraints.NORTHWEST, GridBagConstraints.HORIZONTAL, new Insets(4, 4, 4, 4), 0, 0));
 

@@ -42,7 +42,7 @@ public class CoapRespImpl implements CoapResp {
         }
         else {
             int rawStatus = response.getCode().value;
-            statusCode = (rawStatus & 0xe0) * 100 + (rawStatus & 0x1f);
+            statusCode = ((rawStatus & 0xe0) >> 5) * 100 + (rawStatus & 0x1f);
             if (response.getPayload() != null){
                 //responsePayload = Arrays.copyOf(response.getPayload(), response.getPayloadSize());
                 responsePayloadString = new String(response.getPayload(), Charsets.UTF_8);
