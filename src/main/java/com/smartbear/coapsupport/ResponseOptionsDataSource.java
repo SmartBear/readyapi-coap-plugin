@@ -10,7 +10,6 @@ public class ResponseOptionsDataSource implements CoapOptionsDataSource {
     private List<Option> options = new ArrayList<>();
 
     public ResponseOptionsDataSource(Response message){
-
         options = message.getOptions().asSortedList();
     }
 
@@ -20,21 +19,18 @@ public class ResponseOptionsDataSource implements CoapOptionsDataSource {
     }
 
     @Override
-    public CoapOption getOption(int optionIndex) {
-        Option raw = options.get(optionIndex);
-        byte[] value = raw.getValue();
-        if(value == null || value.length == 0) return new CoapOption(raw.getNumber());
-        return new CoapOption(raw.getNumber(), "0x" + Utils.bytesToHexString(value));
+    public Option getOption(int optionIndex) {
+        return options.get(optionIndex);
     }
 
     @Override
-    public void setOption(int optionIndex, String optionValue) {
+    public void setOption(int optionIndex, byte[] optionValue) {
 
     }
 
     @Override
-    public int addOption(int optionNumber, String optionValue) {
-        return -1;
+    public int addOption(int optionNumber, byte[] optionValue) {
+        return 0;
     }
 
     @Override
@@ -56,4 +52,5 @@ public class ResponseOptionsDataSource implements CoapOptionsDataSource {
     public void removeOptionsListener(CoapOptionsListener listener) {
 
     }
+
 }

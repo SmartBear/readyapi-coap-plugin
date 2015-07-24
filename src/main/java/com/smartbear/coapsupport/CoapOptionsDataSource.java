@@ -1,19 +1,13 @@
 package com.smartbear.coapsupport;
 
-import java.util.List;
+
+import org.eclipse.californium.core.coap.Option;
 
 public interface CoapOptionsDataSource {
-    class CoapOption{
-        public int number;
-        public String value;
-        CoapOption(int number){this.number = number;}
-        CoapOption(int number, String value){this.number = number; this.value = value;}
-    }
-    //List<CoapOption> getOptions();
     int getOptionCount();
-    CoapOption getOption(int optionIndex);
-    void setOption(int optionIndex, String optionValue);
-    int addOption(int optionNumber, String optionValue);
+    Option getOption(int optionIndex);
+    void setOption(int optionIndex, Option option);
+    int addOption(int optionNumber, Option option);
     void removeOption(int optionIndex);
     void moveOption(int optionIndex, int delta);
     void addOptionsListener(CoapOptionsListener listener);

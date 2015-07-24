@@ -1,22 +1,26 @@
 package com.smartbear.coapsupport;
 
-import ch.ethz.inf.vs.californium.coap.MediaTypeRegistry;
-import ch.ethz.inf.vs.californium.coap.OptionNumberRegistry;
+import com.smartbear.ready.GhostText;
+import org.eclipse.californium.core.coap.MediaTypeRegistry;
+import org.eclipse.californium.core.coap.OptionNumberRegistry;
 
 import com.eviware.soapui.support.StringUtils;
 
 import javax.swing.AbstractCellEditor;
 import javax.swing.JComboBox;
+import javax.swing.JSpinner;
 import javax.swing.JTable;
+import javax.swing.JTextField;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.TableCellEditor;
 import javax.swing.table.TableCellRenderer;
 import java.awt.Component;
+import static org.eclipse.californium.core.coap.OptionNumberRegistry.optionFormats.*;
 
 
 public class KnownOptions {
 
-    public static int[] editableRequestOptions = {OptionNumberRegistry.ACCEPT, OptionNumberRegistry.CONTENT_TYPE, OptionNumberRegistry.ETAG};
+    public static int[] editableRequestOptions = {OptionNumberRegistry.ACCEPT, OptionNumberRegistry.CONTENT_FORMAT, OptionNumberRegistry.ETAG};
 
     public static String[] getEditableRequestOptionsNames(){
         String[] result = new String[editableRequestOptions.length];
@@ -29,7 +33,7 @@ public class KnownOptions {
 
     public static Class<? extends TableCellRenderer> getOptionRenderer(int optionNumber){
         switch (optionNumber){
-            case OptionNumberRegistry.ACCEPT: case OptionNumberRegistry.CONTENT_TYPE:
+            case OptionNumberRegistry.ACCEPT: case OptionNumberRegistry.CONTENT_FORMAT:
                 return MediaTypeOptionRenderer.class;
             default:
                 return null;
@@ -37,8 +41,14 @@ public class KnownOptions {
     }
 
     public static Class<? extends TableCellEditor> getOptionEditor(int optionNumber){
-        if(optionNumber == OptionNumberRegistry.ACCEPT || optionNumber == OptionNumberRegistry.CONTENT_TYPE){
+        if(optionNumber == OptionNumberRegistry.ACCEPT || optionNumber == OptionNumberRegistry.CONTENT_FORMAT){
             return MediaTypeOptionEditor.class;
+        }
+        else if(OptionNumberRegistry.getFormatByNr(optionNumber) == INTEGER){
+            return UIntOptionEditor.class;
+        }
+        else if(OptionNumberRegistry.getFormatByNr(optionNumber) == OPAQUE || OptionNumberRegistry.getFormatByNr(optionNumber) == UNKNOWN){
+            return OpaqueOptionEditor.class;
         }
         return null;
     }
@@ -132,6 +142,42 @@ public class KnownOptions {
             }
             if(mediaType < 0 || mediaType > 0xffff) return initialValue;
             return "0x" + Integer.toString(mediaType, 16);
+        }
+    }
+
+    public static class UIntOptionEditor extends AbstractCellEditor implements TableCellEditor {
+        private JSpinner spinEdit = new JSpinner();
+
+        @Override
+        public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
+            spinEdit.setValue(value);
+            return spinEdit;
+        }
+
+        @Override
+        public Object getCellEditorValue() {
+            return spinEdit.getValue();
+        }
+    }
+
+    public static class OpaqueOptionEditor extends AbstractCellEditor implements TableCellEditor {
+        private GhostText<JTextField> ghost;
+        private JTextField editor;
+
+        public OpaqueOptionEditor(){
+            editor = new JTextField(10);
+            ghost = new GhostText<JTextField>(editor, "Use hex (0x..) or string");
+        }
+
+        @Override
+        public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
+            editor.setText((String)value);
+            return editor;
+        }
+
+        @Override
+        public Object getCellEditorValue() {
+            return editor.getText();
         }
     }
 

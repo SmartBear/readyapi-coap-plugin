@@ -65,11 +65,12 @@ public class Expander extends JPanel {
                 int iconY = textY - asc + (asc + desc - getIcon().getIconHeight()) / 2;
                 if(textY < 0) textY = 0;
                 if(isEnabled()) {
-                    graphics.setPaint(getForeground());
                     getIcon().paintIcon(this, graphics, 0, iconY);
+                    graphics.setPaint(getForeground());
                     graphics.drawString(getText(), textX, textY);
                 }
                 else {
+                    getIcon().paintIcon(this, graphics, 0, iconY);
                     graphics.setPaint(Color.LIGHT_GRAY);
                     graphics.drawString(getText(), textX, textY);
                 }

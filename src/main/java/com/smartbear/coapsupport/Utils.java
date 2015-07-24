@@ -2,6 +2,8 @@ package com.smartbear.coapsupport;
 
 import ch.ethz.inf.vs.californium.coap.CoAP;
 
+import java.util.Arrays;
+
 public class Utils {
     public static boolean areStringsEqual(String s1, String s2, boolean caseInsensitive, boolean dontDistinctNullAndEmpty){
         if(dontDistinctNullAndEmpty) {
@@ -16,6 +18,12 @@ public class Utils {
     }
     public static boolean areStringsEqual(String s1, String s2){
         return areStringsEqual(s1, s2, false);
+    }
+
+    public static boolean areArraysEqual(byte[] arr1, byte[] arr2, boolean dontDistinctNilAndEmpty) {
+        if(!dontDistinctNilAndEmpty) return Arrays.equals(arr1, arr2);
+        if(arr1 == null || arr1.length == 0) return arr2 == null || arr2.length == 0;
+        return Arrays.equals(arr1, arr2);
     }
 
     public static String bytesToHexString(byte[] buf){
@@ -71,4 +79,6 @@ public class Utils {
         }
         return "";
     }
+
+
 }

@@ -1,6 +1,7 @@
 package com.smartbear.coapsupport;
 
-import ch.ethz.inf.vs.californium.coap.OptionNumberRegistry;
+import org.eclipse.californium.core.coap.Option;
+import org.eclipse.californium.core.coap.OptionNumberRegistry;
 import com.eviware.soapui.SoapUI;
 import com.eviware.soapui.support.StringUtils;
 import com.eviware.soapui.support.UISupport;
@@ -45,6 +46,9 @@ public class OptionsEditingPane extends JPanel {
     private OptionsTable grid;
     private MoveOptionUpAction moveOptionUpAction;
     private MoveOptionDownAction moveOptionDownAction;
+
+    private final static int NAME_COLUMN = 0;
+    private final static int VALUE_COLUMN = 1;
 
 
     public OptionsEditingPane(){
@@ -123,8 +127,8 @@ public class OptionsEditingPane extends JPanel {
 
         @Override
         public TableCellRenderer getCellRenderer(int row, int column) {
-            if(column == 1) {
-                Class<? extends TableCellRenderer> clazz = KnownOptions.getOptionRenderer(tableModel.getDataSource().getOption(row).number);
+            if(column == VALUE_COLUMN) {
+                Class<? extends TableCellRenderer> clazz = KnownOptions.getOptionRenderer(tableModel.getDataSource().getOption(row).getNumber());
                 if(clazz == null) return super.getCellRenderer(row, column);
                 if(!renderers.containsKey(clazz)){
                     TableCellRenderer renderer = null;
@@ -144,8 +148,8 @@ public class OptionsEditingPane extends JPanel {
 
         @Override
         public TableCellEditor getCellEditor(int row, int column) {
-            if(column == 1) {
-                Class<? extends TableCellEditor> clazz = KnownOptions.getOptionEditor(tableModel.getDataSource().getOption(row).number);
+            if(column == VALUE_COLUMN) {
+                Class<? extends TableCellEditor> clazz = KnownOptions.getOptionEditor(tableModel.getDataSource().getOption(row).getNumber());
                 if(clazz == null) return super.getCellEditor(row, column);
                 if(!editors.containsKey(clazz)){
                     TableCellEditor editor = null;
@@ -196,20 +200,32 @@ public class OptionsEditingPane extends JPanel {
 
         @Override
         public Object getValueAt(int rowIndex, int columnIndex) {
-            if(columnIndex == 0){
-                return OptionNumberRegistry.toString(dataSource.getOption(rowIndex).number);
+            Option option = dataSource.getOption(rowIndex);
+            if(columnIndex == NAME_COLUMN){
+                return OptionNumberRegistry.toString(option.getNumber());
             }
-            else if(columnIndex == 1){
-                return dataSource.getOption(rowIndex).value;
+            else if(columnIndex == VALUE_COLUMN){
+                switch (OptionNumberRegistry.getFormatByNr(option.getNumber())){
+                    case INTEGER:
+                        return option.getLongValue();
+                    case STRING:
+                        return option.getStringValue();
+                    case OPAQUE: case UNKNOWN:
+                        byte[] raw = option.getValue();
+                        if(raw == null || raw.length == 0) return "";
+                        if(option instanceof OptionEx)
+                        return Utils.bytesToHexString(raw);
+                }
             }
             throw new IllegalArgumentException();
         }
 
         @Override
         public void setValueAt(Object aValue, int rowIndex, int columnIndex) {
-            if(columnIndex != 1) throw new IllegalArgumentException();
+            if(columnIndex != VALUE_COLUMN) throw new IllegalArgumentException();
             changingDataSource = true;
             try {
+                Option option = dataSource.getOption(rowIndex);
                 dataSource.setOption(rowIndex, (String)aValue);
             }
             finally {
@@ -219,14 +235,14 @@ public class OptionsEditingPane extends JPanel {
 
         @Override
         public String getColumnName(int column) {
-            if(column == 0) return "Option";
-            if(column == 1) return "Value";
+            if(column == NAME_COLUMN) return "Option";
+            if(column == VALUE_COLUMN) return "Value";
             throw new IllegalArgumentException();
         }
 
         @Override
         public boolean isCellEditable(int rowIndex, int columnIndex) {
-            return columnIndex == 1 && editable;
+            return columnIndex == VALUE_COLUMN && editable;
         }
 
         public void setEditable(boolean editable) {
@@ -234,19 +250,19 @@ public class OptionsEditingPane extends JPanel {
         }
 
         @Override
-        public void onOptionChanged(int optionIndex, int oldOptionNumber, int newOptionNumber, String oldOptionValue, String newOptionValue) {
+        public void onOptionChanged(int optionIndex, int oldOptionNumber, int newOptionNumber, byte[] oldOptionValue, byte[] newOptionValue) {
             if(changingDataSource) return;
             fireTableRowsUpdated(optionIndex, optionIndex);
         }
 
         @Override
-        public void onOptionAdded(int optionIndex, int optionNumber, String optionValue) {
+        public void onOptionAdded(int optionIndex, int optionNumber, byte[] optionValue) {
             if(changingDataSource) return;
             fireTableRowsInserted(optionIndex, optionIndex);
         }
 
         @Override
-        public void onOptionRemoved(int optionIndex, int oldOptionNumber, String oldOptionValue) {
+        public void onOptionRemoved(int optionIndex, int oldOptionNumber, byte[] oldOptionValue) {
             if(changingDataSource) return;
             fireTableRowsDeleted(optionIndex, optionIndex);
         }
@@ -261,7 +277,7 @@ public class OptionsEditingPane extends JPanel {
             if(dataSource == null) return false;
             int rowCount = dataSource.getOptionCount();
             for(int i = 0; i < rowCount; i++){
-                if(dataSource.getOption(i).number == optionNumber) return true;
+                if(dataSource.getOption(i).getNumber() == optionNumber) return true;
             }
             return false;
         }
