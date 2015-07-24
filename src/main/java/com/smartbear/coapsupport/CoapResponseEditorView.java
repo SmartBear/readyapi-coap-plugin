@@ -1,6 +1,6 @@
 package com.smartbear.coapsupport;
 
-import ch.ethz.inf.vs.californium.coap.Response;
+import org.eclipse.californium.core.coap.Response;
 import com.eviware.soapui.SoapUI;
 import com.eviware.soapui.model.ModelItem;
 import com.eviware.soapui.plugins.auto.PluginResponseEditorView;
@@ -21,7 +21,6 @@ import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
-import java.lang.management.MemoryManagerMXBean;
 import java.util.Arrays;
 
 @PluginResponseEditorView(viewId = "CoAP Message", targetClass = CoapRequest.class)

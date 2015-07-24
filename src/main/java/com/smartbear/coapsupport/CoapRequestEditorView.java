@@ -51,7 +51,7 @@ public class CoapRequestEditorView extends AbstractXmlEditorView<AbstractHttpXml
             //paramsExpander.setFont(paramsExpander.getFont().deriveFont(Font.BOLD));
             mainPanel.add(paramsExpander, new GridBagConstraints(0, 0, 1, 1, 0, 0, GridBagConstraints.NORTHWEST, GridBagConstraints.HORIZONTAL, new Insets(4, 4, 4, 4), 0, 0));
 
-            OptionsEditingPane optionsEditor = new OptionsEditingPane();
+            OptionsEditingPane optionsEditor = new OptionsEditingPane(request);
             optionsEditor.setData(request);
             optionsEditor.setEditable(true);
             final Expander optionsExpander = new Expander("Options", optionsEditor, true, 200, 250);

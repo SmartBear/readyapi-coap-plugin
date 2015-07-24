@@ -1,24 +1,19 @@
 package com.smartbear.coapsupport;
 
-import ch.ethz.inf.vs.californium.coap.MediaTypeRegistry;
-import ch.ethz.inf.vs.californium.coap.Response;
+import org.eclipse.californium.core.coap.MediaTypeRegistry;
+import org.eclipse.californium.core.coap.Response;
 import com.eviware.soapui.impl.rest.support.MediaTypeHandler;
 import com.eviware.soapui.impl.rest.support.MediaTypeHandlerRegistry;
 import com.eviware.soapui.impl.support.AbstractHttpRequest;
 import com.eviware.soapui.impl.support.AbstractHttpRequestInterface;
 import com.eviware.soapui.impl.wsdl.WsdlRequest;
-import com.eviware.soapui.impl.wsdl.submit.transports.http.HttpResponse;
 import com.eviware.soapui.impl.wsdl.submit.transports.http.SSLInfo;
 import com.eviware.soapui.model.iface.Attachment;
-import com.eviware.soapui.model.iface.Request;
-import com.eviware.soapui.model.util.BaseResponse;
 import com.eviware.soapui.support.types.StringToStringMap;
 import com.eviware.soapui.support.types.StringToStringsMap;
 import com.google.common.base.Charsets;
 
-import java.lang.reflect.Array;
 import java.net.URL;
-import java.util.Arrays;
 
 public class CoapRespImpl implements CoapResp {
     private StringToStringMap properties = new StringToStringMap();

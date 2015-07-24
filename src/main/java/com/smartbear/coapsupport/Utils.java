@@ -1,6 +1,6 @@
 package com.smartbear.coapsupport;
 
-import ch.ethz.inf.vs.californium.coap.CoAP;
+//import org.eclipse.californium.core.CoAP;
 
 import java.util.Arrays;
 
@@ -39,14 +39,14 @@ public class Utils {
 
     public static byte[] hexStringToBytes(String str){
         if(str == null) return null;
-        if(str.length() % 2 != 0) throw new IllegalArgumentException();
+        if(str.length() % 2 != 0) throw new IllegalArgumentException("The string has odd number of characters which correspond to hexadecimal digits so it cannot be interpreted as a byte sequence.");
         byte[] result = new byte[str.length() / 2];
         try {
             for(int i = 0; i < result.length; ++i){
                 result[i] = (byte)Short.parseShort(str.substring(i * 2, i * 2 + 2), 16);
             }
         } catch (NumberFormatException e) {
-            throw new IllegalArgumentException();
+            throw new IllegalArgumentException("This string cannot be interpreted as a sequence of hexadecimal digits.");
         }
         return result;
     }

@@ -1,8 +1,8 @@
 package com.smartbear.coapsupport;
 
-import ch.ethz.inf.vs.californium.coap.CoAP;
-import ch.ethz.inf.vs.californium.coap.Option;
-import ch.ethz.inf.vs.californium.coap.Request;
+import org.eclipse.californium.core.coap.CoAP;
+import org.eclipse.californium.core.coap.Option;
+import org.eclipse.californium.core.coap.Request;
 import com.eviware.soapui.SoapUI;
 import com.eviware.soapui.impl.rest.support.RestParamProperty;
 import com.eviware.soapui.impl.rest.support.RestParamsPropertyHolder;
@@ -120,24 +120,32 @@ public class CoapTransport implements RequestTransport {
         catch (NumberFormatException ignored){
         }
 
-        ch.ethz.inf.vs.californium.coap.Request message = new ch.ethz.inf.vs.californium.coap.Request(reqestType, request.getConfirmable() ? CoAP.Type.CON : CoAP.Type.NON);
+        org.eclipse.californium.core.coap.Request message = new org.eclipse.californium.core.coap.Request(reqestType, request.getConfirmable() ? CoAP.Type.CON : CoAP.Type.NON);
         message.setURI(endpoint + query.toString());
         int optionCount = request.getOptionCount();
         for (int i = 0; i < optionCount; ++i) {
-            CoapOptionsDataSource.CoapOption option = request.getOption(i);
-            if(option.value == null || option.value.length() == 0) {
-                message.getOptions().addOption(new Option(option.number));
+            Option option = new Option(request.getOptionNumber(i));
+            String rawValue = request.getOptionValue(i);
+            String expValue = null;
+            if(rawValue != null) expValue = PropertyExpander.expandProperties(context, rawValue);
+            if(expValue != null){
+                if(expValue.startsWith("0x0x")){
+                    option.setStringValue(expValue.substring(2));
+                }
+                else if(expValue.startsWith("0x")){
+                    byte[] binValue;
+                    try {
+                        binValue = Utils.hexStringToBytes(expValue);
+                    } catch (IllegalArgumentException e) {
+                        throw new IllegalArgumentException(String.format("\"%s\" string could not be interpreted as a binary value of the option %d", expValue, option.getNumber()));
+                    }
+                    option.setValue(binValue);
+                }
+                else {
+                    option.setStringValue(expValue);
+                }
             }
-            else if(option.value.startsWith("0x0x")){
-                message.getOptions().addOption(new Option(option.number, option.value.substring(2)));
-            }
-            else if(option.value.startsWith("0x")){
-                byte[] opaque = Utils.hexStringToBytes(option.value.substring(2));
-                message.getOptions().addOption(new Option(option.number, opaque));
-            }
-            else{
-                message.getOptions().addOption(new Option(option.number, option.value));
-            }
+            message.getOptions().addOption(option);
         }
         context.setProperty(REQUEST_CONTEXT_PROP, message);
 //        context.setProperty(ACKNOWLEDGED_CONTEXT_PROP, false);
@@ -148,7 +156,7 @@ public class CoapTransport implements RequestTransport {
         long startTime = System.currentTimeMillis();
         message.send();
 
-        ch.ethz.inf.vs.californium.coap.Response responseMessage = message.waitForResponse(timeout);
+        org.eclipse.californium.core.coap.Response responseMessage = message.waitForResponse(timeout);
 
         if(message.isCanceled()) throw new CoapSubmitFailureException("Request was canceled.");
         long takenTime = System.currentTimeMillis() - startTime;

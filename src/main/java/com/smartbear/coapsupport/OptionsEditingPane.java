@@ -1,5 +1,6 @@
 package com.smartbear.coapsupport;
 
+import com.eviware.soapui.model.ModelItem;
 import org.eclipse.californium.core.coap.Option;
 import org.eclipse.californium.core.coap.OptionNumberRegistry;
 import com.eviware.soapui.SoapUI;
@@ -46,13 +47,16 @@ public class OptionsEditingPane extends JPanel {
     private OptionsTable grid;
     private MoveOptionUpAction moveOptionUpAction;
     private MoveOptionDownAction moveOptionDownAction;
+    private ModelItem owningModelItem;
 
     private final static int NAME_COLUMN = 0;
     private final static int VALUE_COLUMN = 1;
 
+    public OptionsEditingPane(){this(null);}
 
-    public OptionsEditingPane(){
+    public OptionsEditingPane(ModelItem owningModelItem){
         super();
+        this.owningModelItem = owningModelItem;
         addIcon = UISupport.createImageIcon("com/eviware/soapui/resources/images/add.png");
         deleteIcon = UISupport.createImageIcon("com/eviware/soapui/resources/images/delete.png");
         moveDownIcon = UISupport.createImageIcon("com/eviware/soapui/resources/images/down_arrow.gif");
@@ -128,7 +132,7 @@ public class OptionsEditingPane extends JPanel {
         @Override
         public TableCellRenderer getCellRenderer(int row, int column) {
             if(column == VALUE_COLUMN) {
-                Class<? extends TableCellRenderer> clazz = KnownOptions.getOptionRenderer(tableModel.getDataSource().getOption(row).getNumber());
+                Class<? extends TableCellRenderer> clazz = KnownOptions.getOptionRenderer(tableModel.getDataSource().getOptionNumber(row));
                 if(clazz == null) return super.getCellRenderer(row, column);
                 if(!renderers.containsKey(clazz)){
                     TableCellRenderer renderer = null;
@@ -149,12 +153,12 @@ public class OptionsEditingPane extends JPanel {
         @Override
         public TableCellEditor getCellEditor(int row, int column) {
             if(column == VALUE_COLUMN) {
-                Class<? extends TableCellEditor> clazz = KnownOptions.getOptionEditor(tableModel.getDataSource().getOption(row).getNumber());
+                Class<? extends TableCellEditor> clazz = KnownOptions.getOptionEditor(tableModel.getDataSource().getOptionNumber(row));
                 if(clazz == null) return super.getCellEditor(row, column);
                 if(!editors.containsKey(clazz)){
                     TableCellEditor editor = null;
                     try {
-                        editor = clazz.getConstructor().newInstance();
+                        editor = clazz.getConstructor(ModelItem.class).newInstance(owningModelItem);
                     } catch (Throwable e) {
                         SoapUI.logError(e);
                     }
@@ -200,21 +204,34 @@ public class OptionsEditingPane extends JPanel {
 
         @Override
         public Object getValueAt(int rowIndex, int columnIndex) {
-            Option option = dataSource.getOption(rowIndex);
+            int number = dataSource.getOptionNumber(rowIndex);
             if(columnIndex == NAME_COLUMN){
-                return OptionNumberRegistry.toString(option.getNumber());
+                return OptionNumberRegistry.toString(number);
             }
             else if(columnIndex == VALUE_COLUMN){
-                switch (OptionNumberRegistry.getFormatByNr(option.getNumber())){
+                String strValue = dataSource.getOptionValue(rowIndex);
+                byte[] binValue;
+                Option option;
+                switch (OptionNumberRegistry.getFormatByNr(number)){
                     case INTEGER:
+                        if(strValue == null || strValue.length() == 0) {
+                            option = new Option(0, new byte[0]);
+                        }
+                        else{
+                            try {
+                                binValue = Utils.hexStringToBytes(strValue.substring(2));
+                            }
+                            catch (NumberFormatException e){
+                                SoapUI.logError(e, String.format("Incorrect CoAP option data: %s", strValue));
+                                return null;
+                            }
+                            option = new Option(0, binValue);
+                        }
                         return option.getLongValue();
                     case STRING:
-                        return option.getStringValue();
+                        return strValue;
                     case OPAQUE: case UNKNOWN:
-                        byte[] raw = option.getValue();
-                        if(raw == null || raw.length == 0) return "";
-                        if(option instanceof OptionEx)
-                        return Utils.bytesToHexString(raw);
+                       return strValue;
                 }
             }
             throw new IllegalArgumentException();
@@ -225,8 +242,18 @@ public class OptionsEditingPane extends JPanel {
             if(columnIndex != VALUE_COLUMN) throw new IllegalArgumentException();
             changingDataSource = true;
             try {
-                Option option = dataSource.getOption(rowIndex);
-                dataSource.setOption(rowIndex, (String)aValue);
+                if(aValue instanceof Number){
+                    Option tmpOption = new Option(0, ((Number)aValue).longValue());
+                    if(tmpOption.getValue() == null || tmpOption.getValue().length == 0){
+                        dataSource.setOption(rowIndex, null);
+                    }
+                    else {
+                        String hexValue = "0x" + Utils.bytesToHexString(tmpOption.getValue());
+                    }
+                }
+                else{
+                    dataSource.setOption(rowIndex, (String)aValue);
+                }
             }
             finally {
                 changingDataSource = false;
@@ -250,19 +277,19 @@ public class OptionsEditingPane extends JPanel {
         }
 
         @Override
-        public void onOptionChanged(int optionIndex, int oldOptionNumber, int newOptionNumber, byte[] oldOptionValue, byte[] newOptionValue) {
+        public void onOptionChanged(int optionIndex, int oldOptionNumber, int newOptionNumber, String oldOptionValue, String newOptionValue) {
             if(changingDataSource) return;
             fireTableRowsUpdated(optionIndex, optionIndex);
         }
 
         @Override
-        public void onOptionAdded(int optionIndex, int optionNumber, byte[] optionValue) {
+        public void onOptionAdded(int optionIndex, int optionNumber, String optionValue) {
             if(changingDataSource) return;
             fireTableRowsInserted(optionIndex, optionIndex);
         }
 
         @Override
-        public void onOptionRemoved(int optionIndex, int oldOptionNumber, byte[] oldOptionValue) {
+        public void onOptionRemoved(int optionIndex, int oldOptionNumber, String oldOptionValue) {
             if(changingDataSource) return;
             fireTableRowsDeleted(optionIndex, optionIndex);
         }
@@ -277,7 +304,7 @@ public class OptionsEditingPane extends JPanel {
             if(dataSource == null) return false;
             int rowCount = dataSource.getOptionCount();
             for(int i = 0; i < rowCount; i++){
-                if(dataSource.getOption(i).getNumber() == optionNumber) return true;
+                if(dataSource.getOptionNumber(i) == optionNumber) return true;
             }
             return false;
         }
@@ -338,8 +365,8 @@ public class OptionsEditingPane extends JPanel {
                         if(optionNumber <= 0) return new ValidationMessage[]{new ValidationMessage("Please type a valid positive decimal or hexadecimal number (starting from 0x) or choose an option from the list.", combo)};
                         if(OptionNumberRegistry.isSingleValue(optionNumber) && tableModel.hasOption(optionNumber)) return new ValidationMessage[]{new ValidationMessage("Unable to add this option because it is already specified and it does not allow multiple values", combo)};
                         if(editor != null){
-                            String value = (String) editor.getCellEditorValue();
-                            if(value == null || value.length() == 0) return new ValidationMessage[]{new ValidationMessage("Please input a valid option value", valueField)};
+                            Object value = editor.getCellEditorValue();
+                            if(value == null || (value instanceof String && ((String) value).length() == 0)) return new ValidationMessage[]{new ValidationMessage("Please input a valid option value", valueField)};
                         }
                         return new ValidationMessage[0];
                     }
@@ -364,7 +391,7 @@ public class OptionsEditingPane extends JPanel {
                             }
                             else {
                                 try {
-                                    editor = clazz.getConstructor().newInstance();
+                                    editor = clazz.getConstructor(ModelItem.class).newInstance(owningModelItem);
                                 }
                                 catch(Throwable e){
                                     return;

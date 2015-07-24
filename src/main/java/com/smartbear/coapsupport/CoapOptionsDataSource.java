@@ -5,9 +5,10 @@ import org.eclipse.californium.core.coap.Option;
 
 public interface CoapOptionsDataSource {
     int getOptionCount();
-    Option getOption(int optionIndex);
-    void setOption(int optionIndex, Option option);
-    int addOption(int optionNumber, Option option);
+    int getOptionNumber(int optionIndex);
+    String getOptionValue(int optionIndex);
+    void setOption(int optionIndex, String newValue);
+    int addOption(int optionNumber, String value);
     void removeOption(int optionIndex);
     void moveOption(int optionIndex, int delta);
     void addOptionsListener(CoapOptionsListener listener);

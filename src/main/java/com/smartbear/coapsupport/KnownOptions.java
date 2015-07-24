@@ -1,5 +1,9 @@
 package com.smartbear.coapsupport;
 
+import com.eviware.soapui.model.ModelItem;
+import com.eviware.soapui.model.propertyexpansion.PropertyExpansion;
+import com.eviware.soapui.model.propertyexpansion.PropertyExpansionUtils;
+import com.eviware.soapui.support.propertyexpansion.PropertyExpansionPopupListener;
 import com.smartbear.ready.GhostText;
 import org.eclipse.californium.core.coap.MediaTypeRegistry;
 import org.eclipse.californium.core.coap.OptionNumberRegistry;
@@ -44,11 +48,15 @@ public class KnownOptions {
         if(optionNumber == OptionNumberRegistry.ACCEPT || optionNumber == OptionNumberRegistry.CONTENT_FORMAT){
             return MediaTypeOptionEditor.class;
         }
-        else if(OptionNumberRegistry.getFormatByNr(optionNumber) == INTEGER){
-            return UIntOptionEditor.class;
-        }
-        else if(OptionNumberRegistry.getFormatByNr(optionNumber) == OPAQUE || OptionNumberRegistry.getFormatByNr(optionNumber) == UNKNOWN){
-            return OpaqueOptionEditor.class;
+        else{
+            switch (OptionNumberRegistry.getFormatByNr(optionNumber)){
+                case STRING:
+                    return StringOptionEditor.class;
+                case INTEGER:
+                    return UIntOptionEditor.class;
+                case OPAQUE: case UNKNOWN:
+                    return OpaqueOptionEditor.class;
+            }
         }
         return null;
     }
@@ -58,32 +66,25 @@ public class KnownOptions {
     public static class MediaTypeOptionRenderer extends DefaultTableCellRenderer{
         @Override
         protected void setValue(Object value) {
-            String rawValue = (String) value;
-            int number;
-            if(rawValue == null || rawValue.length() == 0){
-                number = 0;
-            }
-            else if(rawValue.startsWith("0x")) {
-                try {
-                    number = Integer.parseInt(rawValue.substring(2), 16);
-                } catch (NumberFormatException ignored) {
-                    setText(rawValue);
-                    return;
-                }
-            }
-            else{
-                setText(rawValue);
+            Number number = (Number) value;
+            if(number == null){
+                setText("");
                 return;
             }
-            if(MediaTypeRegistry.getAllMediaTypes().contains(number)) setText(MediaTypeRegistry.toString(number)); else setText(rawValue);
+            if(MediaTypeRegistry.getAllMediaTypes().contains(number.intValue())){
+                setText(MediaTypeRegistry.toString(number.intValue()));
+            }
+            else {
+                setText("0x" + Integer.toHexString(number.intValue()));
+            }
         }
     }
 
     public static class MediaTypeOptionEditor extends AbstractCellEditor implements TableCellEditor{
         private JComboBox<String> comboBox;
-        private String initialValue;
+        private Number initialValue;
 
-        public MediaTypeOptionEditor(){
+        public MediaTypeOptionEditor(ModelItem modelItem){
             String[] mediaTypeItems = new String[MediaTypeRegistry.getAllMediaTypes().size() - 1];
             int i = 0;
             for(int mediaType: MediaTypeRegistry.getAllMediaTypes()){
@@ -96,28 +97,18 @@ public class KnownOptions {
 
         @Override
         public Component getTableCellEditorComponent(JTable table, Object valueObject, boolean isSelected, int row, int column) {
-            String rawValue = (String) valueObject;
-            initialValue = rawValue;
-            if (rawValue == null || rawValue.length() == 0) {
-                comboBox.setSelectedItem(MediaTypeRegistry.toString(0));
-            } else {
-                rawValue = rawValue.trim();
-                if (rawValue.startsWith("0x")) {
-                    int mediaType;
-                    try {
-                        mediaType = Integer.parseInt(rawValue.substring(2), 16);
-                    } catch (NumberFormatException e) {
-                        throw new IllegalArgumentException();
-                    }
-                    if (mediaType < 0 || mediaType >= 0x10000) throw new IllegalArgumentException();
-                    if(MediaTypeRegistry.getAllMediaTypes().contains(mediaType)){
-                        comboBox.setSelectedItem(MediaTypeRegistry.toString(mediaType));
-                    }
-                    else{
-                        comboBox.setSelectedItem("0x" + Integer.toString(mediaType, 16));
-                    }
-                } else {
-                    throw new IllegalArgumentException();
+            initialValue = (Number)valueObject;
+            if (initialValue == null) {
+                comboBox.setSelectedItem("");
+            }
+            else {
+                int mediaType = initialValue.intValue();
+                //if (mediaType < 0 || mediaType >= 0x10000) throw new IllegalArgumentException();
+                if(MediaTypeRegistry.getAllMediaTypes().contains(mediaType)){
+                    comboBox.setSelectedItem(MediaTypeRegistry.toString(mediaType));
+                }
+                else{
+                    comboBox.setSelectedItem("0x" + Integer.toString(mediaType, 16));
                 }
             }
             return comboBox;
@@ -128,7 +119,9 @@ public class KnownOptions {
             String value = (String) comboBox.getEditor().getItem();
             if(StringUtils.isNullOrEmpty(value)) return initialValue;
             value = value.trim();
-            if(comboBox.getSelectedIndex() >= 0) return "0x" + Integer.toString(MediaTypeRegistry.parse((String) comboBox.getSelectedItem()), 16);
+            if(comboBox.getSelectedIndex() >= 0){
+                return MediaTypeRegistry.parse((String) comboBox.getSelectedItem());
+            }
             int radix = 10;
             if(value.startsWith("0x")){
                 radix = 16;
@@ -141,12 +134,14 @@ public class KnownOptions {
                 return initialValue;
             }
             if(mediaType < 0 || mediaType > 0xffff) return initialValue;
-            return "0x" + Integer.toString(mediaType, 16);
+            return mediaType;
         }
     }
 
     public static class UIntOptionEditor extends AbstractCellEditor implements TableCellEditor {
         private JSpinner spinEdit = new JSpinner();
+
+        public UIntOptionEditor(ModelItem modelItem){}
 
         @Override
         public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
@@ -164,8 +159,9 @@ public class KnownOptions {
         private GhostText<JTextField> ghost;
         private JTextField editor;
 
-        public OpaqueOptionEditor(){
+        public OpaqueOptionEditor(ModelItem modelItem){
             editor = new JTextField(10);
+            PropertyExpansionPopupListener.enable(editor, modelItem);
             ghost = new GhostText<JTextField>(editor, "Use hex (0x..) or string");
         }
 
@@ -181,4 +177,23 @@ public class KnownOptions {
         }
     }
 
+    private static class StringOptionEditor extends AbstractCellEditor implements TableCellEditor {
+        private JTextField editor;
+
+        public StringOptionEditor(ModelItem modelItem){
+            editor = new JTextField(10);
+            PropertyExpansionPopupListener.enable(editor, modelItem);
+        }
+
+        @Override
+        public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
+            editor.setText((String)value);
+            return editor;
+        }
+
+        @Override
+        public Object getCellEditorValue() {
+            return editor.getText();
+        }
+    }
 }

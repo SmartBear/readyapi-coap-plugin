@@ -1,7 +1,9 @@
 package com.smartbear.coapsupport;
 
-import ch.ethz.inf.vs.californium.coap.Option;
-import ch.ethz.inf.vs.californium.coap.Response;
+import org.eclipse.californium.core.coap.Option;
+import org.eclipse.californium.core.coap.OptionNumberRegistry;
+import org.eclipse.californium.core.coap.Response;
+
 
 import java.util.ArrayList;
 import java.util.List;
@@ -19,17 +21,30 @@ public class ResponseOptionsDataSource implements CoapOptionsDataSource {
     }
 
     @Override
-    public Option getOption(int optionIndex) {
-        return options.get(optionIndex);
+    public int getOptionNumber(int optionIndex) {
+        return options.get(optionIndex).getNumber();
     }
 
     @Override
-    public void setOption(int optionIndex, byte[] optionValue) {
+    public String getOptionValue(int optionIndex) {
+        Option option = options.get(optionIndex);
+        switch (OptionNumberRegistry.getFormatByNr(option.getNumber())){
+            case STRING:
+                return option.getStringValue();
+            case OPAQUE: case UNKNOWN: case INTEGER:
+                if(option.getValue() == null || option.getValue().length == 0) return null;
+                return "0x" + Utils.bytesToHexString(option.getValue());
+        }
+        throw new IllegalArgumentException();
+    }
+
+    @Override
+    public void setOption(int optionIndex, String optionValue) {
 
     }
 
     @Override
-    public int addOption(int optionNumber, byte[] optionValue) {
+    public int addOption(int optionNumber, String optionValue) {
         return 0;
     }
 
@@ -52,5 +67,6 @@ public class ResponseOptionsDataSource implements CoapOptionsDataSource {
     public void removeOptionsListener(CoapOptionsListener listener) {
 
     }
+
 
 }
