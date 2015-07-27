@@ -1,8 +1,12 @@
 package com.smartbear.coapsupport;
 
 
+import javax.swing.JPopupMenu;
+import javax.swing.SwingUtilities;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
+import javax.swing.event.PopupMenuEvent;
+import javax.swing.event.PopupMenuListener;
 import javax.swing.text.JTextComponent;
 import java.awt.Color;
 import java.awt.event.FocusEvent;
@@ -10,13 +14,14 @@ import java.awt.event.FocusListener;
 import java.beans.PropertyChangeEvent;
 import java.beans.PropertyChangeListener;
 
-public class GhostText<TextComponent extends JTextComponent> implements FocusListener, DocumentListener, PropertyChangeListener
+public class GhostText<TextComponent extends JTextComponent> implements FocusListener, DocumentListener, PropertyChangeListener, PopupMenuListener
 {
     protected final TextComponent textComp;
     protected boolean isEmpty;
     private Color ghostColor;
     private Color foregroundColor;
     protected final String ghostText;
+    private boolean isPopupOpen = false;
 
     public GhostText(final TextComponent textComp, String ghostText)
     {
@@ -25,17 +30,19 @@ public class GhostText<TextComponent extends JTextComponent> implements FocusLis
         this.ghostText = ghostText;
         this.ghostColor = Color.LIGHT_GRAY;
         textComp.addFocusListener(this);
+        textComp.addPropertyChangeListener("componentPopupMenu", this);
+        JPopupMenu popupMenu = textComp.getComponentPopupMenu();
+        if(popupMenu != null) popupMenu.addPopupMenuListener(this);
         registerListeners();
-        updateState();
-        if (!this.textComp.hasFocus())
-        {
-            focusLost(null);
-        }
+        updateState(true);
     }
 
     public void delete()
     {
         unregisterListeners();
+        textComp.removePropertyChangeListener("componentPopupMenu", this);
+        JPopupMenu popupMenu = textComp.getComponentPopupMenu();
+        if(popupMenu != null) popupMenu.removePopupMenuListener(this);
         textComp.removeFocusListener(this);
     }
 
@@ -64,86 +71,124 @@ public class GhostText<TextComponent extends JTextComponent> implements FocusLis
         this.ghostColor = ghostColor;
     }
 
-    private void updateState()
+    private void updateState(boolean textChanged)
     {
-        if(!isEmpty) foregroundColor = textComp.getForeground();
-        isEmpty = textComp.getText().length() == 0;
-        if(isEmpty && !textComp.hasFocus()) {
-            textComp.setForeground(ghostColor);
+        if(textChanged) isEmpty = textComp.getText().length() == 0;
+        if(isEmpty) {
+            if (!textComp.hasFocus() && !isPopupOpen) {
+                doSetGhostText();
+            } else {
+                clearGhostText();
+            }
         }
-        else {
-            textComp.setForeground(foregroundColor);
+        else{
+            restoreForegroundColor();
         }
     }
 
     @Override
     public void focusGained(FocusEvent e)
     {
-        if (isEmpty)
-        {
-            unregisterListeners();
-            try
-            {
-                clearGhostText();
-                textComp.setForeground(foregroundColor);
-            }
-            finally
-            {
-                registerListeners();
-            }
-        }
-
+        updateState(false);
     }
 
     @Override
     public void focusLost(FocusEvent e)
     {
-        if (isEmpty)
-        {
-            unregisterListeners();
-            try
-            {
-                doSetGhostText();
-                textComp.setForeground(ghostColor);
-            }
-            finally
-            {
-                registerListeners();
-            }
-        }
+        updateState(false);
     }
 
     protected void doSetGhostText(){
-        textComp.setText(ghostText);
-
+        unregisterListeners();
+        try {
+            textComp.setText(ghostText);
+            textComp.setForeground(ghostColor);
+        }
+        finally {
+            registerListeners();
+        }
     }
 
     protected void clearGhostText(){
-        textComp.setText("");
+        unregisterListeners();
+        try {
+            textComp.setText("");
+            textComp.setForeground(foregroundColor);
+        }
+        finally {
+            registerListeners();
+        }
+    }
+
+    protected void restoreForegroundColor(){
+        unregisterListeners();
+        try {
+            textComp.setForeground(foregroundColor);
+        }
+        finally {
+            registerListeners();
+        }
     }
 
     @Override
     public void propertyChange(PropertyChangeEvent evt)
     {
-        updateState();
+        if("foreground".equals(evt.getPropertyName())) {
+            foregroundColor = textComp.getForeground();
+        }
+        else if("componentPopupMenu".equals(evt.getPropertyName())){
+            JPopupMenu old = (JPopupMenu)evt.getOldValue();
+            JPopupMenu cur = (JPopupMenu)evt.getNewValue();
+            if(old != null) old.removePopupMenuListener(this);
+            if(cur != null) cur.addPopupMenuListener(this);
+        }
     }
 
     @Override
     public void changedUpdate(DocumentEvent e)
     {
-        updateState();
+        SwingUtilities.invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                updateState(true);
+            }
+        });
     }
 
     @Override
     public void insertUpdate(DocumentEvent e)
     {
-        updateState();
+        SwingUtilities.invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                updateState(true);
+            }
+        });
     }
 
     @Override
     public void removeUpdate(DocumentEvent e)
     {
-        updateState();
+        SwingUtilities.invokeLater(new Runnable() {
+            @Override
+            public void run() {
+                updateState(true);
+            }
+        });
     }
 
+    @Override
+    public void popupMenuWillBecomeVisible(PopupMenuEvent e) {
+        if(isEmpty) textComp.setText("");
+    }
+
+    @Override
+    public void popupMenuWillBecomeInvisible(PopupMenuEvent e) {
+        if(isEmpty) textComp.setText(ghostText);
+    }
+
+    @Override
+    public void popupMenuCanceled(PopupMenuEvent e) {
+
+    }
 }
