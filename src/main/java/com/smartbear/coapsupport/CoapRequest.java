@@ -18,6 +18,7 @@ import org.w3c.dom.Node;
 import org.w3c.dom.Text;
 
 import javax.swing.ImageIcon;
+import javax.validation.constraints.NotNull;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -190,6 +191,7 @@ public class CoapRequest extends HttpTestRequest implements CoapOptionsDataSourc
         return readOptionNumber(optionSection);
     }
 
+    @NotNull
     @Override
     public String getOptionValue(int optionIndex) {
         Element optionSection = getOptionSection(optionIndex);

@@ -66,7 +66,8 @@ public class KnownOptions {
 
 
     private static Long decodeIntOptionValue(String rawValue, int maxByteCount){
-        if(rawValue == null || rawValue.length() == 0) return 0L;
+        if(rawValue == null) return null;
+        if(rawValue.length() == 0) return 0L;
         if(rawValue.startsWith("0x0x")) return null;
         if(!rawValue.startsWith("0x") || rawValue.length() > maxByteCount * 2 + 2) return null;
         byte[] binValue;
@@ -201,8 +202,7 @@ public class KnownOptions {
 
         @Override
         public Component getTableCellEditorComponent(JTable table, Object initialValue, boolean isSelected, int row, int column) {
-            String rawValue = (String) initialValue;
-            this.initialValue = rawValue;
+            this.initialValue = (String)initialValue;
             comboBox.setValue(this.initialValue);
             return comboBox;
         }

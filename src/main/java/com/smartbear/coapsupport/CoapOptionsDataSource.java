@@ -3,9 +3,12 @@ package com.smartbear.coapsupport;
 
 import org.eclipse.californium.core.coap.Option;
 
+import javax.validation.constraints.NotNull;
+
 public interface CoapOptionsDataSource {
     int getOptionCount();
     int getOptionNumber(int optionIndex);
+    @NotNull
     String getOptionValue(int optionIndex);
     void setOption(int optionIndex, String newValue);
     int addOption(int optionNumber, String value);
