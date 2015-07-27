@@ -1,4 +1,4 @@
-package com.smartbear.ready;
+package com.smartbear.coapsupport;
 
 
 import javax.swing.event.DocumentEvent;
@@ -66,8 +66,14 @@ public class GhostText<TextComponent extends JTextComponent> implements FocusLis
 
     private void updateState()
     {
+        if(!isEmpty) foregroundColor = textComp.getForeground();
         isEmpty = textComp.getText().length() == 0;
-        foregroundColor = textComp.getForeground();
+        if(isEmpty && !textComp.hasFocus()) {
+            textComp.setForeground(ghostColor);
+        }
+        else {
+            textComp.setForeground(foregroundColor);
+        }
     }
 
     @Override

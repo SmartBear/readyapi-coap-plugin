@@ -209,30 +209,7 @@ public class OptionsEditingPane extends JPanel {
                 return OptionNumberRegistry.toString(number);
             }
             else if(columnIndex == VALUE_COLUMN){
-                String strValue = dataSource.getOptionValue(rowIndex);
-                byte[] binValue;
-                Option option;
-                switch (OptionNumberRegistry.getFormatByNr(number)){
-                    case INTEGER:
-                        if(strValue == null || strValue.length() == 0) {
-                            option = new Option(0, new byte[0]);
-                        }
-                        else{
-                            try {
-                                binValue = Utils.hexStringToBytes(strValue.substring(2));
-                            }
-                            catch (NumberFormatException e){
-                                SoapUI.logError(e, String.format("Incorrect CoAP option data: %s", strValue));
-                                return null;
-                            }
-                            option = new Option(0, binValue);
-                        }
-                        return option.getLongValue();
-                    case STRING:
-                        return strValue;
-                    case OPAQUE: case UNKNOWN:
-                       return strValue;
-                }
+                return dataSource.getOptionValue(rowIndex);
             }
             throw new IllegalArgumentException();
         }
@@ -241,19 +218,8 @@ public class OptionsEditingPane extends JPanel {
         public void setValueAt(Object aValue, int rowIndex, int columnIndex) {
             if(columnIndex != VALUE_COLUMN) throw new IllegalArgumentException();
             changingDataSource = true;
-            try {
-                if(aValue instanceof Number){
-                    Option tmpOption = new Option(0, ((Number)aValue).longValue());
-                    if(tmpOption.getValue() == null || tmpOption.getValue().length == 0){
-                        dataSource.setOption(rowIndex, null);
-                    }
-                    else {
-                        String hexValue = "0x" + Utils.bytesToHexString(tmpOption.getValue());
-                    }
-                }
-                else{
-                    dataSource.setOption(rowIndex, (String)aValue);
-                }
+            try{
+                dataSource.setOption(rowIndex, (String)aValue);
             }
             finally {
                 changingDataSource = false;
@@ -365,8 +331,8 @@ public class OptionsEditingPane extends JPanel {
                         if(optionNumber <= 0) return new ValidationMessage[]{new ValidationMessage("Please type a valid positive decimal or hexadecimal number (starting from 0x) or choose an option from the list.", combo)};
                         if(OptionNumberRegistry.isSingleValue(optionNumber) && tableModel.hasOption(optionNumber)) return new ValidationMessage[]{new ValidationMessage("Unable to add this option because it is already specified and it does not allow multiple values", combo)};
                         if(editor != null){
-                            Object value = editor.getCellEditorValue();
-                            if(value == null || (value instanceof String && ((String) value).length() == 0)) return new ValidationMessage[]{new ValidationMessage("Please input a valid option value", valueField)};
+                            String value = (String)editor.getCellEditorValue();
+                            if(value == null) return new ValidationMessage[]{new ValidationMessage("Please input a valid option value", valueField)};
                         }
                         return new ValidationMessage[0];
                     }

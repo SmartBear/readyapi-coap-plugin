@@ -11,6 +11,7 @@ import com.eviware.soapui.support.StringUtils;
 import com.eviware.soapui.support.UISupport;
 import org.apache.xmlbeans.XmlObject;
 
+import org.eclipse.californium.core.coap.OptionNumberRegistry;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
@@ -281,6 +282,17 @@ public class CoapRequest extends HttpTestRequest implements CoapOptionsDataSourc
         }
     }
 
+//    @Override
+//    public String getMediaType() {
+//        XmlObject[] mediaTypeSections = getConfig().selectPath(String.format("$this/%s[@%s=%d]", OPTION_SECTION, OPTION_NUMBER_ATTR, OptionNumberRegistry.CONTENT_FORMAT));
+//        if(mediaTypeSections == null || mediaTypeSections.length == 0) return null;
+//        if(mediaTypeSections.length != 1){
+//            SoapUI.log(String.format("Incorrect data (duplicated Content-Format option) in the %s test step", getName()));
+//        }
+//        String value = readOptionValue(mediaTypeSections[0]);
+//        KnownOptions.de
+//
+//    }
 
     public void addOptionsListener(CoapOptionsListener listener){
         if(optionsListeners == null) optionsListeners = new ArrayList<>();
