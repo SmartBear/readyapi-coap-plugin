@@ -149,47 +149,67 @@ public class KnownOptions {
         }
     }
 
-    public static class MediaTypeOptionEditor extends AbstractCellEditor implements TableCellEditor{
-        private JComboBox<String> comboBox;
-        private String initialValue;
-
-        public MediaTypeOptionEditor(ModelItem modelItem){
+    public static class MediaTypeComboBox extends JComboBox<String>{
+        private static String[] getItems(){
             String[] mediaTypeItems = new String[MediaTypeRegistry.getAllMediaTypes().size() - 1];
             int i = 0;
             for(int mediaType: MediaTypeRegistry.getAllMediaTypes()){
                 if(mediaType == MediaTypeRegistry.UNDEFINED) continue;
                 mediaTypeItems[i++] = MediaTypeRegistry.toString(mediaType);
             }
-            comboBox = new JComboBox<String>(mediaTypeItems);
-            comboBox.setEditable(true);
+            return mediaTypeItems;
+        }
+
+        public MediaTypeComboBox(){
+            super(getItems());
+            setEditable(true);
+
+        }
+
+        public String getValue(){
+            if(getSelectedIndex() >= 0){
+                return encodeIntOptionValue(MediaTypeRegistry.parse((String) getSelectedItem()), 2);
+            }
+            return encodeIntOptionValue((String)getEditor().getItem(), 2);
+        }
+
+        public void setValue(String newValue){
+            Long intValue = decodeIntOptionValue(newValue, 2);
+            if(intValue == null){
+                if(newValue != null && newValue.startsWith("0x")) setSelectedItem(newValue.substring(2)); else setSelectedItem(newValue);
+            }
+            else{
+                int mediaType = intValue.intValue();
+                if(MediaTypeRegistry.getAllMediaTypes().contains(mediaType)){
+                    setSelectedItem(MediaTypeRegistry.toString(mediaType));
+                }
+                else{
+                    setSelectedItem("0x" + Integer.toString(mediaType, 16));
+                }
+            }
+        }
+    }
+
+
+    public static class MediaTypeOptionEditor extends AbstractCellEditor implements TableCellEditor{
+        private MediaTypeComboBox comboBox;
+        private String initialValue;
+
+        public MediaTypeOptionEditor(ModelItem modelItem){
+            comboBox = new MediaTypeComboBox();
         }
 
         @Override
         public Component getTableCellEditorComponent(JTable table, Object initialValue, boolean isSelected, int row, int column) {
             String rawValue = (String) initialValue;
             this.initialValue = rawValue;
-            Long intValue = decodeIntOptionValue(rawValue, 2);
-            if(intValue == null){
-                if(rawValue != null && rawValue.startsWith("0x")) comboBox.setSelectedItem(rawValue.substring(2)); else comboBox.setSelectedItem(rawValue);
-            }
-            else{
-                int mediaType = intValue.intValue();
-                if(MediaTypeRegistry.getAllMediaTypes().contains(mediaType)){
-                    comboBox.setSelectedItem(MediaTypeRegistry.toString(mediaType));
-                }
-                else{
-                    comboBox.setSelectedItem("0x" + Integer.toString(mediaType, 16));
-                }
-            }
+            comboBox.setValue(this.initialValue);
             return comboBox;
         }
 
         @Override
         public Object getCellEditorValue(){
-            if(comboBox.getSelectedIndex() >= 0){
-                return encodeIntOptionValue(MediaTypeRegistry.parse((String) comboBox.getSelectedItem()), 2);
-            }
-            String result = encodeIntOptionValue((String)comboBox.getEditor().getItem(), 2);
+            String result = comboBox.getValue();
             if(result == null) return initialValue; else return result;
         }
     }
