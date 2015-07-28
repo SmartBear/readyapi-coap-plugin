@@ -28,10 +28,10 @@ import java.util.List;
 
 
 public class CoapRequest extends HttpTestRequest implements CoapOptionsDataSource {
-    private final static String OUR_SCHEMA = null;// "http://smartbear.com/rapi/config";
     private static final String OPTION_SECTION = "Option";
     private static final String OPTION_NUMBER_ATTR = "Number";
     private static final String OPTION_VALUE_ATTR = "Value";
+    public static final String CONTENT_FORMAT_OPTION_BEAN_PROP = "contentFormatOption";
 
     private CoapRequestTestStep testStep;
     private ImageIcon validRequestIcon;
@@ -91,7 +91,7 @@ public class CoapRequest extends HttpTestRequest implements CoapOptionsDataSourc
 //        String attrValue = xmlObject.xmlText();
 //        return "true".equalsIgnoreCase(attrValue);
         Element element = (Element) getConfig().getDomNode();
-        String rawValue = element.getAttributeNS(OUR_SCHEMA, "confirmable");
+        String rawValue = element.getAttributeNS(null, "confirmable");
         if(rawValue == null) return true;
         return Boolean.valueOf(rawValue);
 
@@ -101,7 +101,7 @@ public class CoapRequest extends HttpTestRequest implements CoapOptionsDataSourc
         boolean oldConfirmable = getConfirmable();
         if(newValue  !=  oldConfirmable) {
             Element element = (Element) getConfig().getDomNode();
-            element.setAttributeNS(OUR_SCHEMA, "confirmable", Boolean.toString(newValue));
+            element.setAttributeNS(null, "confirmable", Boolean.toString(newValue));
             notifyPropertyChanged("confirmable", oldConfirmable, newValue);
         }
     }
@@ -111,11 +111,16 @@ public class CoapRequest extends HttpTestRequest implements CoapOptionsDataSourc
     }
 
     public void updateConfig(HttpRequestConfig request){
+        String oldContentFormat = getContentFormatOption();
         super.updateConfig(request);
         if(optionsListeners != null){
             for(CoapOptionsListener listener: optionsListeners){
                 listener.onWholeOptionListChanged();
             }
+        }
+        String newContentFormat = getContentFormatOption();
+        if(Utils.areStringsEqual(oldContentFormat, newContentFormat, true, false)){
+            notifyPropertyChanged(CONTENT_FORMAT_OPTION_BEAN_PROP, oldContentFormat, newContentFormat);
         }
     }
 
@@ -217,6 +222,9 @@ public class CoapRequest extends HttpTestRequest implements CoapOptionsDataSourc
                 listener.onOptionChanged(optionIndex, optionNumber, optionNumber, oldOptionValue, optionValue);
             }
         }
+        if(optionNumber == OptionNumberRegistry.CONTENT_FORMAT){
+            notifyPropertyChanged(CONTENT_FORMAT_OPTION_BEAN_PROP, oldOptionValue, optionValue == null ? "" : optionValue);
+        }
     }
 
     @Override
@@ -241,6 +249,9 @@ public class CoapRequest extends HttpTestRequest implements CoapOptionsDataSourc
                 listener.onOptionAdded(pos, optionNumber, optionValue);
             }
         }
+        if(optionNumber == OptionNumberRegistry.CONTENT_FORMAT){
+            notifyPropertyChanged(CONTENT_FORMAT_OPTION_BEAN_PROP, null, optionValue == null ? "" : optionValue);
+        }
         return pos;
     }
 
@@ -254,6 +265,9 @@ public class CoapRequest extends HttpTestRequest implements CoapOptionsDataSourc
             for(CoapOptionsListener listener: optionsListeners){
                 listener.onOptionRemoved(optionIndex, oldOptionNumber, oldOption);
             }
+        }
+        if(oldOptionNumber == OptionNumberRegistry.CONTENT_FORMAT){
+            notifyPropertyChanged(CONTENT_FORMAT_OPTION_BEAN_PROP, oldOption, null);
         }
     }
 
@@ -295,6 +309,30 @@ public class CoapRequest extends HttpTestRequest implements CoapOptionsDataSourc
 //        KnownOptions.de
 //
 //    }
+
+    public String getContentFormatOption(){
+        XmlObject[] mediaTypeSections = getConfig().selectPath(String.format("$this/%s[@%s=%d]", OPTION_SECTION, OPTION_NUMBER_ATTR, OptionNumberRegistry.CONTENT_FORMAT));
+        if(mediaTypeSections == null || mediaTypeSections.length == 0) return null;
+        if(mediaTypeSections.length != 1){
+            SoapUI.log(String.format("Incorrect data (duplicated Content-Format option) in the %s test step", getName()));
+        }
+        return readOptionValue(mediaTypeSections[0]);
+    }
+
+    public void setContentFormatOption(String value){
+        String oldValue = getContentFormatOption();
+        if(Utils.areStringsEqual(oldValue, value, true, false)) return;
+        int count = getOptionCount();
+        for(int i = 0; i < count; ++i){
+            if(getOptionNumber(i) == OptionNumberRegistry.CONTENT_FORMAT){
+                if(value == null) removeOption(i); else setOption(i, value);
+                notifyPropertyChanged(CONTENT_FORMAT_OPTION_BEAN_PROP, oldValue, value);
+                return;
+            }
+        }
+        addOption(OptionNumberRegistry.CONTENT_FORMAT, value);
+        notifyPropertyChanged(CONTENT_FORMAT_OPTION_BEAN_PROP, oldValue, value);
+    }
 
     public void addOptionsListener(CoapOptionsListener listener){
         if(optionsListeners == null) optionsListeners = new ArrayList<>();

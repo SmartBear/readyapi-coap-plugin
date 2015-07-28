@@ -6,17 +6,17 @@ import org.eclipse.californium.core.coap.MediaTypeRegistry;
 import org.eclipse.californium.core.coap.Option;
 import org.eclipse.californium.core.coap.OptionNumberRegistry;
 
-import com.eviware.soapui.support.StringUtils;
-
 import javax.swing.AbstractCellEditor;
 import javax.swing.JComboBox;
-import javax.swing.JSpinner;
 import javax.swing.JTable;
 import javax.swing.JTextField;
+import javax.swing.SwingUtilities;
 import javax.swing.table.DefaultTableCellRenderer;
 import javax.swing.table.TableCellEditor;
 import javax.swing.table.TableCellRenderer;
 import java.awt.Component;
+import java.awt.event.FocusEvent;
+import java.awt.event.KeyEvent;
 
 
 public class KnownOptions {
@@ -150,6 +150,8 @@ public class KnownOptions {
     }
 
     public static class MediaTypeComboBox extends JComboBox<String>{
+        private String value = null;
+
         private static String[] getItems(){
             String[] mediaTypeItems = new String[MediaTypeRegistry.getAllMediaTypes().size() - 1];
             int i = 0;
@@ -163,17 +165,22 @@ public class KnownOptions {
         public MediaTypeComboBox(){
             super(getItems());
             setEditable(true);
+            setSelectedItem(null);
 
         }
 
-        public String getValue(){
+        public String getEditedValue(){
             if(getSelectedIndex() >= 0){
                 return encodeIntOptionValue(MediaTypeRegistry.parse((String) getSelectedItem()), 2);
             }
             return encodeIntOptionValue((String)getEditor().getItem(), 2);
         }
 
-        public void setValue(String newValue){
+        public static final String VALUE_BEAN_PROP = "optionValue";
+        public String getOptionValue(){return value;}
+        public void setOptionValue(String newValue){
+            String oldValue = getOptionValue();
+            if(Utils.areStringsEqual(oldValue, newValue, false, false)) return;
             Long intValue = decodeIntOptionValue(newValue, 2);
             if(intValue == null){
                 if(newValue != null && newValue.startsWith("0x")) setSelectedItem(newValue.substring(2)); else setSelectedItem(newValue);
@@ -186,6 +193,51 @@ public class KnownOptions {
                 else{
                     setSelectedItem("0x" + Integer.toString(mediaType, 16));
                 }
+            }
+//            value = getEditedValue();
+//            if(!Utils.areStringsEqual(oldValue, value, false, false)) firePropertyChange(VALUE_BEAN_PROP, oldValue, value);
+            updateValueProperty();
+        }
+
+        @Override
+        protected void processFocusEvent(FocusEvent e) {
+            super.processFocusEvent(e);
+            if(e.getID() == FocusEvent.FOCUS_LOST){
+                //updateValueProperty();
+            }
+        }
+
+        @Override
+        public void processKeyEvent(KeyEvent e) {
+            super.processKeyEvent(e);
+            //if(e.getKeyCode() == KeyEvent.VK_ENTER) updateValueProperty();
+        }
+
+        @Override
+        protected void fireActionEvent() {
+            final String prevValue = value;
+            String curValue = getEditedValue();
+            String curText = (String)getEditor().getItem();
+            if(curValue == null && curText != null && curText.length() != 0){
+                SwingUtilities.invokeLater(new Runnable() {
+                    @Override
+                    public void run() {
+                        setOptionValue(prevValue);
+                    }
+                });
+            }
+            else {
+                updateValueProperty();
+            }
+            super.fireActionEvent();
+        }
+
+        private void updateValueProperty() {
+            String oldValue = getOptionValue();
+            String curValue = getEditedValue();
+            if(!Utils.areStringsEqual(oldValue, curValue, false, false)){
+                value = curValue;
+                firePropertyChange(VALUE_BEAN_PROP, oldValue, value);
             }
         }
     }
@@ -202,13 +254,13 @@ public class KnownOptions {
         @Override
         public Component getTableCellEditorComponent(JTable table, Object initialValue, boolean isSelected, int row, int column) {
             this.initialValue = (String)initialValue;
-            comboBox.setValue(this.initialValue);
+            comboBox.setOptionValue(this.initialValue);
             return comboBox;
         }
 
         @Override
         public Object getCellEditorValue(){
-            String result = comboBox.getValue();
+            String result = comboBox.getOptionValue();
             if(result == null) return initialValue; else return result;
         }
     }
@@ -240,7 +292,7 @@ public class KnownOptions {
     }
 
     public static class OpaqueOptionEditor extends AbstractCellEditor implements TableCellEditor {
-        private final static String HINT_TEXT = "Use hex (0x..) or string as the option value";
+        private final static String HINT_TEXT = "Use hex (0x..) or string as an option value";
         private JTextField editor = null;
         private ModelItem modelItem;
 
