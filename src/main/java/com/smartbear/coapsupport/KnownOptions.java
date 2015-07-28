@@ -169,18 +169,25 @@ public class KnownOptions {
 
         }
 
-        public String getEditedValue(){
-            if(getSelectedIndex() >= 0){
-                return encodeIntOptionValue(MediaTypeRegistry.parse((String) getSelectedItem()), 2);
-            }
-            return encodeIntOptionValue((String)getEditor().getItem(), 2);
+//        public String getEditedValue(){
+//            if(getSelectedIndex() >= 0){
+//                return encodeIntOptionValue(MediaTypeRegistry.parse((String) getSelectedItem()), 2);
+//            }
+//            return encodeIntOptionValue((String)getEditor().getItem(), 2);
+//        }
+
+        public static final String VALUE_BEAN_PROP = "value";
+        public String getValue(){return value;}
+
+        public void setValue(String newValue) {
+            String oldValue = getValue();
+            if (Utils.areStringsEqual(oldValue, newValue, false, false)) return;
+            value = newValue;
+            applyValue(newValue);
+            firePropertyChange(VALUE_BEAN_PROP, oldValue, newValue);
         }
 
-        public static final String VALUE_BEAN_PROP = "optionValue";
-        public String getOptionValue(){return value;}
-        public void setOptionValue(String newValue){
-            String oldValue = getOptionValue();
-            if(Utils.areStringsEqual(oldValue, newValue, false, false)) return;
+        private void applyValue(String newValue){
             Long intValue = decodeIntOptionValue(newValue, 2);
             if(intValue == null){
                 if(newValue != null && newValue.startsWith("0x")) setSelectedItem(newValue.substring(2)); else setSelectedItem(newValue);
@@ -194,9 +201,20 @@ public class KnownOptions {
                     setSelectedItem("0x" + Integer.toString(mediaType, 16));
                 }
             }
-//            value = getEditedValue();
-//            if(!Utils.areStringsEqual(oldValue, value, false, false)) firePropertyChange(VALUE_BEAN_PROP, oldValue, value);
-            updateValueProperty();
+        }
+
+        public String getEditedValue(){
+            if(getSelectedIndex() >= 0) {
+                return encodeIntOptionValue(MediaTypeRegistry.parse((String) getSelectedItem()), 2);
+            }
+            String curText = (String)getEditor().getItem();
+            String goodValue = encodeIntOptionValue(curText, 2);
+            if(goodValue != null) return goodValue;
+            if(curText != null && (curText.startsWith("0x") || curText.startsWith("0X"))) return "0x" + curText; else return curText;
+        }
+
+        private boolean isEditedValueValid(){
+            return getSelectedIndex() >= 0 || encodeIntOptionValue((String)getEditor().getItem(), 2) != null;
         }
 
         @Override
@@ -216,24 +234,21 @@ public class KnownOptions {
         @Override
         protected void fireActionEvent() {
             final String prevValue = value;
-            String curValue = getEditedValue();
-            String curText = (String)getEditor().getItem();
-            if(curValue == null && curText != null && curText.length() != 0){
+            boolean resetValue = !isEditedValueValid() && !Utils.areStringsEqual(prevValue, getEditedValue(), true, false);
+            if(!resetValue) updateValueProperty();
+            super.fireActionEvent();
+            if(resetValue){
                 SwingUtilities.invokeLater(new Runnable() {
                     @Override
                     public void run() {
-                        setOptionValue(prevValue);
+                        applyValue(prevValue);
                     }
                 });
             }
-            else {
-                updateValueProperty();
-            }
-            super.fireActionEvent();
         }
 
         private void updateValueProperty() {
-            String oldValue = getOptionValue();
+            String oldValue = getValue();
             String curValue = getEditedValue();
             if(!Utils.areStringsEqual(oldValue, curValue, false, false)){
                 value = curValue;
@@ -254,13 +269,14 @@ public class KnownOptions {
         @Override
         public Component getTableCellEditorComponent(JTable table, Object initialValue, boolean isSelected, int row, int column) {
             this.initialValue = (String)initialValue;
-            comboBox.setOptionValue(this.initialValue);
+            comboBox.setValue(null);
+            comboBox.setValue(this.initialValue);
             return comboBox;
         }
 
         @Override
         public Object getCellEditorValue(){
-            String result = comboBox.getOptionValue();
+            String result = comboBox.getValue();
             if(result == null) return initialValue; else return result;
         }
     }
