@@ -89,6 +89,7 @@ public class GhostText<TextComponent extends JTextComponent> implements FocusLis
     @Override
     public void focusGained(FocusEvent e)
     {
+        isPopupOpen = false;
         updateState(false);
     }
 
@@ -179,16 +180,19 @@ public class GhostText<TextComponent extends JTextComponent> implements FocusLis
 
     @Override
     public void popupMenuWillBecomeVisible(PopupMenuEvent e) {
-        if(isEmpty) textComp.setText("");
+        isPopupOpen = true;
+        updateState(false);
     }
 
     @Override
     public void popupMenuWillBecomeInvisible(PopupMenuEvent e) {
-        if(isEmpty) textComp.setText(ghostText);
+//        isPopupOpen = false;
+//        updateState(false);
     }
 
     @Override
     public void popupMenuCanceled(PopupMenuEvent e) {
-
+        isPopupOpen = false;
+        updateState(false);
     }
 }
