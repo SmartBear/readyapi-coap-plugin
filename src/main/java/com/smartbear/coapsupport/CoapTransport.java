@@ -135,7 +135,7 @@ public class CoapTransport implements RequestTransport {
                 else if(expValue.startsWith("0x")){
                     byte[] binValue;
                     try {
-                        binValue = Utils.hexStringToBytes(expValue);
+                        binValue = Utils.hexStringToBytes(expValue.substring(2));
                     } catch (IllegalArgumentException e) {
                         throw new IllegalArgumentException(String.format("\"%s\" string could not be interpreted as a binary value of the option %d", expValue, option.getNumber()));
                     }
