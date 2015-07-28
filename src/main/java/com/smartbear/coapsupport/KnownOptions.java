@@ -2,7 +2,6 @@ package com.smartbear.coapsupport;
 
 import com.eviware.soapui.model.ModelItem;
 import com.eviware.soapui.support.propertyexpansion.PropertyExpansionPopupListener;
-import com.smartbear.coapsupport.GhostText;
 import org.eclipse.californium.core.coap.MediaTypeRegistry;
 import org.eclipse.californium.core.coap.Option;
 import org.eclipse.californium.core.coap.OptionNumberRegistry;
@@ -241,24 +240,28 @@ public class KnownOptions {
     }
 
     public static class OpaqueOptionEditor extends AbstractCellEditor implements TableCellEditor {
-        private GhostText<JTextField> ghost;
-        private JTextField editor;
+        private final static String HINT_TEXT = "Use hex (0x..) or string as the option value";
+        private JTextField editor = null;
+        private ModelItem modelItem;
 
         public OpaqueOptionEditor(ModelItem modelItem){
-            editor = new JTextField(20);
-            PropertyExpansionPopupListener.enable(editor, modelItem);
-            ghost = new GhostText<JTextField>(editor, "Use hex (0x..) or string");
+            this.modelItem = modelItem;
         }
 
         @Override
         public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
+            if(editor == null){
+                editor = new JTextField(20);
+                editor.setToolTipText(HINT_TEXT);
+                if(modelItem != null) PropertyExpansionPopupListener.enable(editor, modelItem);
+            }
             editor.setText((String)value);
             return editor;
         }
 
         @Override
         public Object getCellEditorValue() {
-            return ghost.getText();
+            return editor.getText();
         }
     }
 
