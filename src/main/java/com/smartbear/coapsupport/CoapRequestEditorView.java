@@ -4,16 +4,24 @@ import com.eviware.soapui.impl.rest.actions.support.NewRestResourceActionBase;
 import com.eviware.soapui.impl.rest.panels.resource.RestParamsTable;
 import com.eviware.soapui.impl.rest.panels.resource.RestParamsTableModel;
 import com.eviware.soapui.impl.rest.support.RestParamProperty;
+import com.eviware.soapui.impl.rest.support.handlers.JsonXmlSerializer;
+import com.eviware.soapui.impl.support.AbstractHttpRequest;
 import com.eviware.soapui.impl.support.panels.AbstractHttpXmlRequestDesktopPanel;
+import com.eviware.soapui.model.iface.Request;
 import com.eviware.soapui.plugins.auto.PluginRequestEditorView;
 import com.eviware.soapui.plugins.auto.PluginResponseEditorView;
+import com.eviware.soapui.support.DocumentListenerAdapter;
 import com.eviware.soapui.support.editor.Editor;
 import com.eviware.soapui.support.editor.views.AbstractXmlEditorView;
 import com.eviware.soapui.support.editor.xml.XmlEditor;
+import com.eviware.soapui.support.propertyexpansion.PropertyExpansionPopupListener;
 import com.eviware.soapui.support.xml.SyntaxEditorUtil;
+import com.eviware.soapui.support.xml.XmlUtils;
 import com.jgoodies.binding.adapter.Bindings;
 import com.jgoodies.binding.beans.PropertyAdapter;
 import com.jgoodies.binding.beans.PropertyConnector;
+import net.sf.json.JSON;
+import org.eclipse.californium.core.coap.MediaTypeRegistry;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 
 import javax.swing.JButton;
@@ -21,6 +29,7 @@ import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
+import javax.swing.text.Document;
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.Font;
@@ -29,16 +38,23 @@ import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.beans.PropertyChangeEvent;
+
+import static com.eviware.soapui.support.JsonUtil.seemsToBeJsonContentType;
 
 @PluginRequestEditorView(viewId = "CoAP Request", targetClass = CoapRequest.class)
 public class CoapRequestEditorView extends AbstractXmlEditorView<AbstractHttpXmlRequestDesktopPanel.HttpRequestDocument>{
     private JComponent component = null;
     private CoapRequest request;
-    private RSyntaxTextArea payloadEditor;
+    private RSyntaxTextArea contentEditor;
+    private RestParamsTable paramsTable;
+    private boolean updatingRequest;
+    private Expander bodyExpander;
 
     public CoapRequestEditorView(Editor<?> editor, CoapRequest request) {
         super("CoAP Request", (CoapRequestTestStepPanel.CoapRequestEditor) editor, "CoAP Request");
         this.request = request;
+        this.request.addPropertyChangeListener(this);
     }
 
     @Override
@@ -51,29 +67,26 @@ public class CoapRequestEditorView extends AbstractXmlEditorView<AbstractHttpXml
         if(component == null){
 
             JPanel mainPanel = new JPanel(new GridBagLayout());
-            RestParamsTable paramsTable = buildParamsTable();
-//            paramsTable.setPreferredSize(new Dimension(500, 400));
-//            paramsTable.setMinimumSize(new Dimension(500, 400));
-//            paramsTable.setPreferredSize(new Dimension(Integer.MAX_VALUE, 400));
+            paramsTable = buildParamsTable();
             Expander paramsExpander = new Expander("Query Parameters", paramsTable, false, 200, 250);
-            //paramsExpander.setFont(paramsExpander.getFont().deriveFont(Font.BOLD));
             mainPanel.add(paramsExpander, new GridBagConstraints(0, 0, 1, 1, 0, 0, GridBagConstraints.NORTHWEST, GridBagConstraints.HORIZONTAL, getDefInsets(), 0, 0));
 
             OptionsEditingPane optionsEditor = new OptionsEditingPane(request);
             optionsEditor.setData(request);
             optionsEditor.setEditable(true);
             final Expander optionsExpander = new Expander("Options", optionsEditor, true, 200, 250);
-          //  optionsExpander.setFont(paramsExpander.getFont().deriveFont(Font.BOLD));
             mainPanel.add(optionsExpander, new GridBagConstraints(0, 1, 1, 1, 0, 0, GridBagConstraints.NORTHWEST, GridBagConstraints.HORIZONTAL, getDefInsets(), 0, 0));
 
 
             JPanel bodyPanel = buildBodyPanel();
-            Expander bodyExpander = new Expander("Payload", bodyPanel, true, 200, 300);
+            bodyExpander = new Expander("Payload", bodyPanel, true, 200, 300);
             mainPanel.add(bodyExpander, new GridBagConstraints(0, 2, 1, 1, 0, 0, GridBagConstraints.NORTHWEST, GridBagConstraints.HORIZONTAL, getDefInsets(), 0, 0));
+            bodyExpander.setVisible(request.hasRequestBody());
 
             JPanel dummyPanel = new JPanel();
             dummyPanel.setPreferredSize(new Dimension(0, 0));
             mainPanel.add(dummyPanel, new GridBagConstraints(0, 3, 1, 1, 1, 1, GridBagConstraints.NORTHWEST, GridBagConstraints.NONE, new Insets(0, 0, 0, 0), 0, 0));
+
             component = new JScrollPane(mainPanel);
 
         }
@@ -86,17 +99,35 @@ public class CoapRequestEditorView extends AbstractXmlEditorView<AbstractHttpXml
 
     private JPanel buildBodyPanel() {
         JPanel bodyPanel = new JPanel(new GridBagLayout());
+
         JLabel label = new JLabel("Content format:");
         KnownOptions.MediaTypeComboBox contentFormatCombo = new KnownOptions.MediaTypeComboBox();
         label.setLabelFor(contentFormatCombo);
         //Bindings.bind(contentFormatCombo, KnownOptions.MediaTypeComboBox.VALUE_BEAN_PROP, new PropertyAdapter<CoapRequest>(request, CoapRequest.CONTENT_FORMAT_OPTION_BEAN_PROP));
         PropertyConnector connector = PropertyConnector.connect(request, CoapRequest.CONTENT_FORMAT_OPTION_BEAN_PROP, contentFormatCombo, KnownOptions.MediaTypeComboBox.VALUE_BEAN_PROP);
         connector.updateProperty2();
-
         bodyPanel.add(label, new GridBagConstraints(0, 0, 1, 1, 0, 0, GridBagConstraints.BASELINE_LEADING, GridBagConstraints.NONE, getDefInsets(), 0, 0));
         bodyPanel.add(contentFormatCombo, new GridBagConstraints(1, 0, 1, 1, 0, 0, GridBagConstraints.BASELINE_LEADING, GridBagConstraints.NONE, getDefInsets(), 0, 0));
-        payloadEditor = SyntaxEditorUtil.createDefaultXmlSyntaxTextArea();
-        bodyPanel.add(new JScrollPane(payloadEditor), new GridBagConstraints(0, 1, 3, 1, 1, 1, GridBagConstraints.NORTHWEST, GridBagConstraints.BOTH, getDefInsets(), 0, 0));
+
+        contentEditor = SyntaxEditorUtil.createDefaultXmlSyntaxTextArea();
+        SyntaxEditorUtil.setMediaType(contentEditor, getCurMediaType());
+        contentEditor.setText(request.getRequestContent());
+
+        contentEditor.getDocument().addDocumentListener(new DocumentListenerAdapter() {
+
+            @Override
+            public void update(Document document) {
+                if (!updatingRequest) {
+                    updatingRequest = true;
+                    request.setRequestContent(getText(document));
+                    updatingRequest = false;
+                }
+            }
+        });
+
+        PropertyExpansionPopupListener.enable(contentEditor, request);
+
+        bodyPanel.add(new JScrollPane(contentEditor), new GridBagConstraints(0, 1, 3, 1, 1, 1, GridBagConstraints.NORTHWEST, GridBagConstraints.BOTH, getDefInsets(), 0, 0));
 
         return bodyPanel;
     }
@@ -104,6 +135,17 @@ public class CoapRequestEditorView extends AbstractXmlEditorView<AbstractHttpXml
     @Override
     public void setEditable(boolean enabled) {
 
+    }
+
+    private String getCurMediaType(){
+        Long mediaType = KnownOptions.decodeIntOptionValue(request.getContentFormatOption(), 2);
+        if(mediaType == null || mediaType == MediaTypeRegistry.UNDEFINED){
+            return "";
+        }
+        for(int it: MediaTypeRegistry.getAllMediaTypes()){
+            if(mediaType == it) return MediaTypeRegistry.toString(mediaType.intValue());
+        }
+        return "";
     }
 
     protected RestParamsTable buildParamsTable() {
@@ -133,6 +175,39 @@ public class CoapRequestEditorView extends AbstractXmlEditorView<AbstractHttpXml
             }
         };
         return new RestParamsTable(request.getParams(), false, restParamsTableModel, NewRestResourceActionBase.ParamLocation.RESOURCE, true, false);
+    }
+
+    public void propertyChange(PropertyChangeEvent evt) {
+        if (evt.getPropertyName().equals(AbstractHttpRequest.REQUEST_PROPERTY) && !updatingRequest) {
+            updatingRequest = true;
+            String requestBodyAsXml = (String) evt.getNewValue();
+            String mediaType = getCurMediaType();
+            if (XmlUtils.seemsToBeXml(requestBodyAsXml) &&
+                    seemsToBeJsonContentType(mediaType)) {
+                JSON jsonObject = new JsonXmlSerializer().read(requestBodyAsXml);
+                contentEditor.setText(jsonObject.toString(3, 0));
+            } else {
+                contentEditor.setText(requestBodyAsXml);
+            }
+            updatingRequest = false;
+        }
+        else if (evt.getPropertyName().equals("method")) {
+            bodyExpander.setVisible(request.hasRequestBody());
+        }
+        else if (evt.getPropertyName().equals(CoapRequest.CONTENT_FORMAT_OPTION_BEAN_PROP)) {
+            SyntaxEditorUtil.setMediaType(contentEditor, getCurMediaType());
+        }
+        super.propertyChange(evt);
+        if (paramsTable != null) {
+            paramsTable.refresh();
+        }
+    }
+
+    @Override
+    public void release() {
+        super.release();
+        request.removePropertyChangeListener(this);
+        paramsTable.release();
     }
 
 }

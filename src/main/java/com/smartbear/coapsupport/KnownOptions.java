@@ -64,7 +64,7 @@ public class KnownOptions {
     }
 
 
-    private static Long decodeIntOptionValue(String rawValue, int maxByteCount){
+    public static Long decodeIntOptionValue(String rawValue, int maxByteCount){
         if(rawValue == null) return null;
         if(rawValue.length() == 0) return 0L;
         if(rawValue.startsWith("0x0x")) return null;
@@ -84,7 +84,7 @@ public class KnownOptions {
     }
 
     //returns null on error
-    private static String encodeIntOptionValue(String text, int maxByteCount){
+    public static String encodeIntOptionValue(String text, int maxByteCount){
         if(text == null || text.length() == 0) return null;
         text = text.trim();
         Long actualValue = null;
@@ -107,7 +107,7 @@ public class KnownOptions {
     }
 
     //returns null on error
-    private static String encodeIntOptionValue(long value, int maxByteCount){
+    public static String encodeIntOptionValue(long value, int maxByteCount){
         if(value < 0) return null;
         if(value >= (1L << (8 * maxByteCount))) return null;
         Option tmpOption = new Option();
@@ -149,20 +149,20 @@ public class KnownOptions {
         }
     }
 
-    public static class MediaTypeComboBox extends JComboBox<String>{
+    public static class MediaTypeComboBox extends JComboBox<String> {
         private String value = null;
 
-        private static String[] getItems(){
+        private static String[] getItems() {
             String[] mediaTypeItems = new String[MediaTypeRegistry.getAllMediaTypes().size() - 1];
             int i = 0;
-            for(int mediaType: MediaTypeRegistry.getAllMediaTypes()){
-                if(mediaType == MediaTypeRegistry.UNDEFINED) continue;
+            for (int mediaType : MediaTypeRegistry.getAllMediaTypes()) {
+                if (mediaType == MediaTypeRegistry.UNDEFINED) continue;
                 mediaTypeItems[i++] = MediaTypeRegistry.toString(mediaType);
             }
             return mediaTypeItems;
         }
 
-        public MediaTypeComboBox(){
+        public MediaTypeComboBox() {
             super(getItems());
             setEditable(true);
             setSelectedItem(null);
@@ -177,7 +177,10 @@ public class KnownOptions {
 //        }
 
         public static final String VALUE_BEAN_PROP = "value";
-        public String getValue(){return value;}
+
+        public String getValue() {
+            return value;
+        }
 
         public void setValue(String newValue) {
             String oldValue = getValue();
@@ -187,40 +190,40 @@ public class KnownOptions {
             firePropertyChange(VALUE_BEAN_PROP, oldValue, newValue);
         }
 
-        private void applyValue(String newValue){
+        private void applyValue(String newValue) {
             Long intValue = decodeIntOptionValue(newValue, 2);
-            if(intValue == null){
-                if(newValue != null && newValue.startsWith("0x")) setSelectedItem(newValue.substring(2)); else setSelectedItem(newValue);
-            }
-            else{
+            if (intValue == null) {
+                if (newValue != null && newValue.startsWith("0x")) setSelectedItem(newValue.substring(2));
+                else setSelectedItem(newValue);
+            } else {
                 int mediaType = intValue.intValue();
-                if(MediaTypeRegistry.getAllMediaTypes().contains(mediaType)){
+                if (MediaTypeRegistry.getAllMediaTypes().contains(mediaType)) {
                     setSelectedItem(MediaTypeRegistry.toString(mediaType));
-                }
-                else{
+                } else {
                     setSelectedItem("0x" + Integer.toString(mediaType, 16));
                 }
             }
         }
 
-        public String getEditedValue(){
-            if(getSelectedIndex() >= 0) {
+        public String getEditedValue() {
+            if (getSelectedIndex() >= 0) {
                 return encodeIntOptionValue(MediaTypeRegistry.parse((String) getSelectedItem()), 2);
             }
-            String curText = (String)getEditor().getItem();
+            String curText = (String) getEditor().getItem();
             String goodValue = encodeIntOptionValue(curText, 2);
-            if(goodValue != null) return goodValue;
-            if(curText != null && (curText.startsWith("0x") || curText.startsWith("0X"))) return "0x" + curText; else return curText;
+            if (goodValue != null) return goodValue;
+            if (curText != null && (curText.startsWith("0x") || curText.startsWith("0X"))) return "0x" + curText;
+            else return curText;
         }
 
-        private boolean isEditedValueValid(){
-            return getSelectedIndex() >= 0 || encodeIntOptionValue((String)getEditor().getItem(), 2) != null;
+        private boolean isEditedValueValid() {
+            return getSelectedIndex() >= 0 || encodeIntOptionValue((String) getEditor().getItem(), 2) != null;
         }
 
         @Override
         protected void processFocusEvent(FocusEvent e) {
             super.processFocusEvent(e);
-            if(e.getID() == FocusEvent.FOCUS_LOST){
+            if (e.getID() == FocusEvent.FOCUS_LOST) {
                 //updateValueProperty();
             }
         }
@@ -235,9 +238,9 @@ public class KnownOptions {
         protected void fireActionEvent() {
             final String prevValue = value;
             boolean resetValue = !isEditedValueValid() && !Utils.areStringsEqual(prevValue, getEditedValue(), true, false);
-            if(!resetValue) updateValueProperty();
+            if (!resetValue) updateValueProperty();
             super.fireActionEvent();
-            if(resetValue){
+            if (resetValue) {
                 SwingUtilities.invokeLater(new Runnable() {
                     @Override
                     public void run() {
@@ -250,13 +253,12 @@ public class KnownOptions {
         private void updateValueProperty() {
             String oldValue = getValue();
             String curValue = getEditedValue();
-            if(!Utils.areStringsEqual(oldValue, curValue, false, false)){
+            if (!Utils.areStringsEqual(oldValue, curValue, false, false)) {
                 value = curValue;
                 firePropertyChange(VALUE_BEAN_PROP, oldValue, value);
             }
         }
     }
-
 
     public static class MediaTypeOptionEditor extends AbstractCellEditor implements TableCellEditor{
         private MediaTypeComboBox comboBox;

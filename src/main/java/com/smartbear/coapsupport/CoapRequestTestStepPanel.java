@@ -5,6 +5,7 @@ import com.eviware.soapui.impl.rest.RestRequestInterface;
 import com.eviware.soapui.impl.support.components.ModelItemXmlEditor;
 import com.eviware.soapui.impl.support.http.HttpRequest;
 import com.eviware.soapui.impl.support.http.HttpRequestContentView;
+import com.eviware.soapui.impl.support.http.HttpRequestContentViewFactory;
 import com.eviware.soapui.impl.support.http.HttpRequestInterface;
 import com.eviware.soapui.impl.support.panels.AbstractHttpRequestDesktopPanel;
 import com.eviware.soapui.impl.support.panels.AbstractHttpXmlRequestDesktopPanel;
@@ -35,6 +36,7 @@ import com.eviware.soapui.support.components.JXToolBar;
 import com.eviware.soapui.support.editor.EditorView;
 import com.eviware.soapui.support.editor.views.xml.outline.XmlOutlineEditorView;
 import com.eviware.soapui.support.editor.views.xml.outline.support.XmlObjectTree;
+import com.eviware.soapui.support.editor.views.xml.raw.RawXmlEditorFactory;
 import com.eviware.soapui.support.log.JLogList;
 import com.eviware.soapui.ui.desktop.DesktopPanel;
 import com.eviware.soapui.ui.support.ModelItemDesktopPanel;
@@ -42,7 +44,7 @@ import com.jgoodies.binding.PresentationModel;
 import com.jgoodies.binding.adapter.Bindings;
 import com.jgoodies.binding.beans.PropertyAdapter;
 import com.jgoodies.binding.list.SelectionInList;
-import com.smartbear.ready.ui.help.HelpUrls;
+
 
 import javax.swing.AbstractAction;
 import javax.swing.Action;
@@ -59,13 +61,6 @@ import javax.swing.JTable;
 import javax.swing.ListModel;
 import javax.swing.table.AbstractTableModel;
 import java.awt.BorderLayout;
-import java.awt.Component;
-import java.awt.Dimension;
-import java.awt.GridBagConstraints;
-import java.awt.GridBagLayout;
-import java.awt.Insets;
-import java.awt.event.ActionEvent;
-import java.beans.PropertyChangeEvent;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Date;
 
@@ -382,10 +377,9 @@ public class CoapRequestTestStepPanel extends AbstractHttpXmlRequestDesktopPanel
 
         @Override
         public void addEditorView(EditorView editorView) {
-//            if(editorView instanceof HttpRequestContentView) return;
-//            if(editorView instanceof XmlObjectTree) return;
-//            if(editorView instanceof XmlOutlineEditorView) return;
             if(getView(editorView.getViewId()) != null) return;
+//            if(HttpRequestContentViewFactory.VIEW_ID.equals(editorView.getViewId())) return;
+//            if(RawXmlEditorFactory.VIEW_ID.equals(editorView.getViewId())) return;
             super.addEditorView(editorView);
         }
 

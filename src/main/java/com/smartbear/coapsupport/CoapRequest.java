@@ -1,6 +1,8 @@
 package com.smartbear.coapsupport;
 
 
+import com.eviware.fife.rsta.ac.java.Util;
+import org.eclipse.californium.core.coap.MediaTypeRegistry;
 import org.eclipse.californium.core.coap.Option;
 import com.eviware.soapui.SoapUI;
 import com.eviware.soapui.config.HttpRequestConfig;
@@ -298,17 +300,37 @@ public class CoapRequest extends HttpTestRequest implements CoapOptionsDataSourc
         }
     }
 
-//    @Override
-//    public String getMediaType() {
-//        XmlObject[] mediaTypeSections = getConfig().selectPath(String.format("$this/%s[@%s=%d]", OPTION_SECTION, OPTION_NUMBER_ATTR, OptionNumberRegistry.CONTENT_FORMAT));
-//        if(mediaTypeSections == null || mediaTypeSections.length == 0) return null;
-//        if(mediaTypeSections.length != 1){
-//            SoapUI.log(String.format("Incorrect data (duplicated Content-Format option) in the %s test step", getName()));
-//        }
-//        String value = readOptionValue(mediaTypeSections[0]);
-//        KnownOptions.de
-//
-//    }
+    private String getMediaTypeString(String optionValue){
+        Long mediaType = KnownOptions.decodeIntOptionValue(optionValue, 2);
+        if(mediaType == null || mediaType == MediaTypeRegistry.UNDEFINED){
+            return "";
+        }
+        for(int it: MediaTypeRegistry.getAllMediaTypes()){
+            if(mediaType == it) return MediaTypeRegistry.toString(mediaType.intValue());
+        }
+        return "";
+
+    }
+
+    @Override
+    public String getMediaType() {
+        return getMediaTypeString(getContentFormatOption());
+    }
+
+    private void contenfFomatChanged(String oldValue, String newValue){
+        notifyPropertyChanged(CONTENT_FORMAT_OPTION_BEAN_PROP, oldValue == null ? "" : oldValue, newValue == null ? "" : newValue);
+        String oldMediaType = getMediaTypeString(oldValue);
+        String newMediaType = getMediaTypeString(newValue);
+        if(Utils.areStringsEqual(oldMediaType, newMediaType, true, true)) notifyPropertyChanged(MEDIA_TYPE, oldMediaType, newMediaType);
+    }
+
+    @Override
+    public void setMediaType(String mediaType) {
+        if(StringUtils.isNullOrEmpty(mediaType)) return;
+        int number = MediaTypeRegistry.parse(mediaType);
+        if(number == MediaTypeRegistry.UNDEFINED) return;
+        setContentFormatOption(KnownOptions.encodeIntOptionValue(number, 2));
+    }
 
     public String getContentFormatOption(){
         XmlObject[] mediaTypeSections = getConfig().selectPath(String.format("$this/%s[@%s=%d]", OPTION_SECTION, OPTION_NUMBER_ATTR, OptionNumberRegistry.CONTENT_FORMAT));
