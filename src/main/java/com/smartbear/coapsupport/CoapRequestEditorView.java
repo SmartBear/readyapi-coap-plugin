@@ -6,6 +6,7 @@ import com.eviware.soapui.impl.rest.panels.resource.RestParamsTableModel;
 import com.eviware.soapui.impl.rest.support.RestParamProperty;
 import com.eviware.soapui.impl.rest.support.handlers.JsonXmlSerializer;
 import com.eviware.soapui.impl.support.AbstractHttpRequest;
+import com.eviware.soapui.impl.support.http.HttpRequest;
 import com.eviware.soapui.impl.support.panels.AbstractHttpXmlRequestDesktopPanel;
 import com.eviware.soapui.model.iface.Request;
 import com.eviware.soapui.plugins.auto.PluginRequestEditorView;
@@ -42,7 +43,7 @@ import java.beans.PropertyChangeEvent;
 
 import static com.eviware.soapui.support.JsonUtil.seemsToBeJsonContentType;
 
-@PluginRequestEditorView(viewId = "CoAP Request", targetClass = CoapRequest.class)
+@PluginRequestEditorView(viewId = CoapRequestEditorView.VIEW_ID, targetClass = CoapRequest.class)
 public class CoapRequestEditorView extends AbstractXmlEditorView<AbstractHttpXmlRequestDesktopPanel.HttpRequestDocument>{
     private JComponent component = null;
     private CoapRequest request;
@@ -51,8 +52,10 @@ public class CoapRequestEditorView extends AbstractXmlEditorView<AbstractHttpXml
     private boolean updatingRequest;
     private Expander bodyExpander;
 
+    public final static String VIEW_ID = "CoAP Request";
+
     public CoapRequestEditorView(Editor<?> editor, CoapRequest request) {
-        super("CoAP Request", (CoapRequestTestStepPanel.CoapRequestEditor) editor, "CoAP Request");
+        super("Request", (CoapRequestTestStepPanel.CoapRequestEditor) editor, VIEW_ID);
         this.request = request;
         this.request.addPropertyChangeListener(this);
     }
@@ -110,7 +113,7 @@ public class CoapRequestEditorView extends AbstractXmlEditorView<AbstractHttpXml
         bodyPanel.add(contentFormatCombo, new GridBagConstraints(1, 0, 1, 1, 0, 0, GridBagConstraints.BASELINE_LEADING, GridBagConstraints.NONE, getDefInsets(), 0, 0));
 
         contentEditor = SyntaxEditorUtil.createDefaultXmlSyntaxTextArea();
-        SyntaxEditorUtil.setMediaType(contentEditor, getCurMediaType());
+        SyntaxEditorUtil.setMediaType(contentEditor, request.getMediaType());
         contentEditor.setText(request.getRequestContent());
 
         contentEditor.getDocument().addDocumentListener(new DocumentListenerAdapter() {
@@ -135,17 +138,6 @@ public class CoapRequestEditorView extends AbstractXmlEditorView<AbstractHttpXml
     @Override
     public void setEditable(boolean enabled) {
 
-    }
-
-    private String getCurMediaType(){
-        Long mediaType = KnownOptions.decodeIntOptionValue(request.getContentFormatOption(), 2);
-        if(mediaType == null || mediaType == MediaTypeRegistry.UNDEFINED){
-            return "";
-        }
-        for(int it: MediaTypeRegistry.getAllMediaTypes()){
-            if(mediaType == it) return MediaTypeRegistry.toString(mediaType.intValue());
-        }
-        return "";
     }
 
     protected RestParamsTable buildParamsTable() {
@@ -181,7 +173,7 @@ public class CoapRequestEditorView extends AbstractXmlEditorView<AbstractHttpXml
         if (evt.getPropertyName().equals(AbstractHttpRequest.REQUEST_PROPERTY) && !updatingRequest) {
             updatingRequest = true;
             String requestBodyAsXml = (String) evt.getNewValue();
-            String mediaType = getCurMediaType();
+            String mediaType = request.getMediaType();
             if (XmlUtils.seemsToBeXml(requestBodyAsXml) &&
                     seemsToBeJsonContentType(mediaType)) {
                 JSON jsonObject = new JsonXmlSerializer().read(requestBodyAsXml);
@@ -194,8 +186,8 @@ public class CoapRequestEditorView extends AbstractXmlEditorView<AbstractHttpXml
         else if (evt.getPropertyName().equals("method")) {
             bodyExpander.setVisible(request.hasRequestBody());
         }
-        else if (evt.getPropertyName().equals(CoapRequest.CONTENT_FORMAT_OPTION_BEAN_PROP)) {
-            SyntaxEditorUtil.setMediaType(contentEditor, getCurMediaType());
+        else if (evt.getPropertyName().equals(HttpRequest.MEDIA_TYPE)) {
+            SyntaxEditorUtil.setMediaType(contentEditor, request.getMediaType());
         }
         super.propertyChange(evt);
         if (paramsTable != null) {

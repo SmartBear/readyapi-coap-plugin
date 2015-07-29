@@ -151,6 +151,7 @@ public class KnownOptions {
 
     public static class MediaTypeComboBox extends JComboBox<String> {
         private String value = null;
+        private boolean applyingValue = false;
 
         private static String[] getItems() {
             String[] mediaTypeItems = new String[MediaTypeRegistry.getAllMediaTypes().size() - 1];
@@ -165,7 +166,7 @@ public class KnownOptions {
         public MediaTypeComboBox() {
             super(getItems());
             setEditable(true);
-            setSelectedItem(null);
+            applyValue(null);
 
         }
 
@@ -191,17 +192,29 @@ public class KnownOptions {
         }
 
         private void applyValue(String newValue) {
-            Long intValue = decodeIntOptionValue(newValue, 2);
-            if (intValue == null) {
-                if (newValue != null && newValue.startsWith("0x")) setSelectedItem(newValue.substring(2));
-                else setSelectedItem(newValue);
-            } else {
-                int mediaType = intValue.intValue();
-                if (MediaTypeRegistry.getAllMediaTypes().contains(mediaType)) {
-                    setSelectedItem(MediaTypeRegistry.toString(mediaType));
-                } else {
-                    setSelectedItem("0x" + Integer.toString(mediaType, 16));
+            applyingValue = true;
+            try {
+                Long intValue = decodeIntOptionValue(newValue, 2);
+                if (intValue == null) {
+                    if (newValue != null && newValue.startsWith("0x")){
+                        setSelectedItem(newValue.substring(2));
+                    }
+                    else {
+                        setSelectedItem(newValue);
+                    }
                 }
+                else {
+                    int mediaType = intValue.intValue();
+                    if (MediaTypeRegistry.getAllMediaTypes().contains(mediaType)) {
+                        setSelectedItem(MediaTypeRegistry.toString(mediaType));
+                    }
+                    else {
+                        setSelectedItem("0x" + Integer.toString(mediaType, 16));
+                    }
+                }
+            }
+            finally {
+                applyingValue = false;
             }
         }
 
@@ -236,6 +249,7 @@ public class KnownOptions {
 
         @Override
         protected void fireActionEvent() {
+            if(applyingValue) return;
             final String prevValue = value;
             boolean resetValue = !isEditedValueValid() && !Utils.areStringsEqual(prevValue, getEditedValue(), true, false);
             if (!resetValue) updateValueProperty();
