@@ -32,7 +32,7 @@ public class ResponseOptionsDataSource implements CoapOptionsDataSource {
             case STRING:
                 return option.getStringValue();
             case OPAQUE: case UNKNOWN: case INTEGER:
-                if(option.getValue() == null || option.getValue().length == 0) return null;
+                if(option.getValue() == null || option.getValue().length == 0) return "";
                 return "0x" + Utils.bytesToHexString(option.getValue());
         }
         throw new IllegalArgumentException();
