@@ -209,7 +209,7 @@ public class CoapRequestTestStepPanel extends AbstractHttpXmlRequestDesktopPanel
         toolbar.addLabeledFixed("Request Endpoint:", endpointEdit);
 
         JCheckBox conf = new JCheckBox("Confirmable Request");
-        Bindings.bind(conf, new PropertyAdapter<CoapRequest>(getTestStep().getRequest(), "confirmable"));
+        Bindings.bind(conf, new PropertyAdapter<CoapRequest>(getTestStep().getRequest(), CoapRequest.CONFIRMABLE_BEAN_PROP));
         toolbar.add(conf);
     }
 
@@ -369,10 +369,10 @@ public class CoapRequestTestStepPanel extends AbstractHttpXmlRequestDesktopPanel
     }
 
 
-    class CoapRequestEditor extends HttpRequestMessageEditor{
+    class CoapRequestEditor extends AbstractHttpRequestDesktopPanel<CoapRequestTestStep, CoapRequest>.AbstractHttpRequestMessageEditor<HttpRequestDocument>{
 
         public CoapRequestEditor(CoapRequest request) {
-            super(request);
+            super(new HttpRequestDocument(request));
         }
 
         @Override

@@ -33,7 +33,9 @@ public class CoapRequest extends HttpTestRequest implements CoapOptionsDataSourc
     private static final String OPTION_SECTION = "Option";
     private static final String OPTION_NUMBER_ATTR = "Number";
     private static final String OPTION_VALUE_ATTR = "Value";
+    private static final String CONFIRMABLE_ATTR = "confirmable";
     public static final String CONTENT_FORMAT_OPTION_BEAN_PROP = "contentFormatOption";
+    public static final String CONFIRMABLE_BEAN_PROP = "confirmable";
 
     private CoapRequestTestStep testStep;
     private ImageIcon validRequestIcon;
@@ -88,13 +90,9 @@ public class CoapRequest extends HttpTestRequest implements CoapOptionsDataSourc
     }
 
     public boolean getConfirmable(){
-//        XmlObject xmlObject = getConfig().selectAttribute(OUR_SCHEMA, "confirmable");
-//        if(xmlObject == null) return true;
-//        String attrValue = xmlObject.xmlText();
-//        return "true".equalsIgnoreCase(attrValue);
         Element element = (Element) getConfig().getDomNode();
-        String rawValue = element.getAttributeNS(null, "confirmable");
-        if(rawValue == null) return true;
+        String rawValue = element.getAttributeNS(null, CONFIRMABLE_ATTR);
+        if(StringUtils.isNullOrEmpty(rawValue)) return true;
         return Boolean.valueOf(rawValue);
 
     }
@@ -103,8 +101,8 @@ public class CoapRequest extends HttpTestRequest implements CoapOptionsDataSourc
         boolean oldConfirmable = getConfirmable();
         if(newValue  !=  oldConfirmable) {
             Element element = (Element) getConfig().getDomNode();
-            element.setAttributeNS(null, "confirmable", Boolean.toString(newValue));
-            notifyPropertyChanged("confirmable", oldConfirmable, newValue);
+            element.setAttributeNS(null, CONFIRMABLE_ATTR, Boolean.toString(newValue));
+            notifyPropertyChanged(CONFIRMABLE_BEAN_PROP, oldConfirmable, newValue);
         }
     }
 
