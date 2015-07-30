@@ -73,13 +73,13 @@ public class OptionsEditingPane extends JPanel {
     private JComponent buildToolbar(){
         toolBar = UISupport.createToolbar();
         addOptionAction = new AddOptionAction();
-        toolBar.add(UISupport.createActionButton(addOptionAction, editable && getData() != null));
+        toolBar.add(UISupport.createToolbarButton(addOptionAction, addOptionAction.isEnabled()));
         deleteOptionAction = new DeleteOptionAction();
-        toolBar.add(UISupport.createActionButton(deleteOptionAction, isActionOnSelectedOptionAllowed()));
-        moveOptionUpAction = new MoveOptionUpAction();
-        toolBar.add(UISupport.createActionButton(moveOptionUpAction, isActionOnSelectedOptionAllowed()));
+        toolBar.add(UISupport.createToolbarButton(deleteOptionAction, deleteOptionAction.isEnabled()));
         moveOptionDownAction = new MoveOptionDownAction();
-        toolBar.add(UISupport.createActionButton(moveOptionDownAction, isActionOnSelectedOptionAllowed()));
+        toolBar.add(UISupport.createToolbarButton(moveOptionDownAction, moveOptionDownAction.isEnabled()));
+        moveOptionUpAction = new MoveOptionUpAction();
+        toolBar.add(UISupport.createToolbarButton(moveOptionUpAction, moveOptionUpAction.isEnabled()));
         toolBar.setVisible(isEditable());
         return toolBar;
     }
@@ -91,14 +91,18 @@ public class OptionsEditingPane extends JPanel {
     private JComponent buildGrid(){
         tableModel = new OptionsTableModel();
         grid = new OptionsTable(tableModel);
+        grid.putClientProperty("terminateEditOnFocusLost", Boolean.TRUE);
+        grid.setRowHeight(25);
+
         grid.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
             @Override
             public void valueChanged(ListSelectionEvent e) {
-                deleteOptionAction.setEnabled(isActionOnSelectedOptionAllowed());
+                if(deleteOptionAction == null) return;
+                deleteOptionAction.updateState();;
+                moveOptionDownAction.updateState();
+                moveOptionUpAction.updateState();
             }
         });
-        grid.putClientProperty("terminateEditOnFocusLost", Boolean.TRUE);
-        grid.setRowHeight(25);
 
         return new JScrollPane(grid);
     }
@@ -107,8 +111,7 @@ public class OptionsEditingPane extends JPanel {
 
     public void setData(CoapOptionsDataSource data){
         tableModel.setDataSource(data);
-        addOptionAction.setEnabled(data != null && editable);
-        deleteOptionAction.setEnabled(isActionOnSelectedOptionAllowed());
+        updateActions();
     }
 
     public boolean isEditable(){
@@ -119,8 +122,14 @@ public class OptionsEditingPane extends JPanel {
         editable = newValue;
         tableModel.setEditable(newValue);
         toolBar.setVisible(newValue);
-        addOptionAction.setEnabled(getData() != null && editable);
-        deleteOptionAction.setEnabled(isActionOnSelectedOptionAllowed());
+        updateActions();
+    }
+
+    private void updateActions(){
+        addOptionAction.updateState();
+        deleteOptionAction.updateState();
+        moveOptionDownAction.updateState();
+        moveOptionUpAction.updateState();
     }
 
     private class OptionsTable extends JTable{
@@ -284,6 +293,7 @@ public class OptionsEditingPane extends JPanel {
             super();
             putValue(Action.SHORT_DESCRIPTION, "Add Option");
             putValue(Action.SMALL_ICON, addIcon);
+            updateState();
         }
 
         private int getOptionNumber(XFormOptionsField combo){
@@ -378,12 +388,19 @@ public class OptionsEditingPane extends JPanel {
                     else{
                         value = dummyValueComponent.getText();
                     }
-                    getData().addOption(optionNumber, value);
+                    int index = getData().addOption(optionNumber, value);
+                    grid.getSelectionModel().clearSelection();
+                    grid.getSelectionModel().addSelectionInterval(index, index);
+
                 }
             }
             finally {
                 dialog.release();
             }
+        }
+
+        public void updateState() {
+            setEnabled(editable && getData() != null);
         }
     }
 
@@ -391,13 +408,32 @@ public class OptionsEditingPane extends JPanel {
         public DeleteOptionAction(){
             putValue(Action.SHORT_DESCRIPTION, "Remove Option");
             putValue(Action.SMALL_ICON, deleteIcon);
+            updateState();
         }
+
+        private void updateState() {
+            setEnabled(isActionOnSelectedOptionAllowed());
+        }
+
         @Override
         public void actionPerformed(ActionEvent e) {
             int[] rows = grid.getSelectedRows();
             Arrays.sort(rows);
             for(int i = rows.length - 1; i >= 0; --i){
                 getData().removeOption(rows[i]);
+            }
+            if(rows.length == 1){
+                int newOptionCount = getData().getOptionCount();
+                grid.getSelectionModel().clearSelection();
+                if(rows[0] < newOptionCount) {
+//                    grid.getSelectionModel().setLeadSelectionIndex(rows[0]);
+                    grid.getSelectionModel().addSelectionInterval(rows[0], rows[0]);
+
+                }
+                else if(newOptionCount != 0){
+//                    grid.getSelectionModel().setLeadSelectionIndex(newOptionCount - 1);
+                    grid.getSelectionModel().addSelectionInterval(newOptionCount - 1, newOptionCount - 1);
+                }
             }
         }
     }
@@ -406,11 +442,20 @@ public class OptionsEditingPane extends JPanel {
         public MoveOptionUpAction(){
             putValue(Action.SHORT_DESCRIPTION, "Move Option Up");
             putValue(Action.SMALL_ICON, moveUpIcon);
+            updateState();
         }
 
         @Override
         public void actionPerformed(ActionEvent e) {
+            int optionNo = grid.getSelectionModel().getLeadSelectionIndex();
+            getData().moveOption(optionNo, -1);
+//            grid.getSelectionModel().setLeadSelectionIndex(optionNo - 1);
+            grid.getSelectionModel().clearSelection();
+            grid.getSelectionModel().addSelectionInterval(optionNo - 1, optionNo - 1);
+        }
 
+        public void updateState() {
+            setEnabled(isActionOnSelectedOptionAllowed() && grid.getSelectionModel().getLeadSelectionIndex() > 0);
         }
     }
 
@@ -418,11 +463,20 @@ public class OptionsEditingPane extends JPanel {
         public MoveOptionDownAction(){
             putValue(Action.SHORT_DESCRIPTION, "Move Option Down");
             putValue(Action.SMALL_ICON, moveDownIcon);
+            updateState();
         }
 
         @Override
         public void actionPerformed(ActionEvent e) {
+            int optionNo = grid.getSelectionModel().getLeadSelectionIndex();
+            getData().moveOption(optionNo, +1);
+            //grid.getSelectionModel().setLeadSelectionIndex(optionNo + 1);
+            grid.getSelectionModel().clearSelection();
+            grid.getSelectionModel().addSelectionInterval(optionNo + 1, optionNo + 1);
+        }
 
+        public void updateState() {
+            setEnabled(isActionOnSelectedOptionAllowed() && grid.getSelectionModel().getLeadSelectionIndex() >= 0 && grid.getSelectionModel().getLeadSelectionIndex() != grid.getRowCount() - 1);
         }
     }
 

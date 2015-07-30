@@ -274,6 +274,7 @@ public class CoapRequest extends HttpTestRequest implements CoapOptionsDataSourc
 
     @Override
     public void moveOption(int optionIndex, int delta) {
+        if(delta == 0) return;
         XmlObject[] optionSections = getConfig().selectPath("$this/" + OPTION_SECTION);
         int optionNumber = readOptionNumber(optionSections[optionIndex]);
         String optionValue = readOptionValue(optionSections[optionIndex]);
@@ -289,7 +290,12 @@ public class CoapRequest extends HttpTestRequest implements CoapOptionsDataSourc
             getConfig().getDomNode().appendChild(movedSection);
         }
         else {
-            getConfig().getDomNode().insertBefore(movedSection, optionSections[newIndex + 1].getDomNode());
+            if(delta > 0) {
+                getConfig().getDomNode().insertBefore(movedSection, optionSections[newIndex + 1].getDomNode());
+            }
+            else{
+                getConfig().getDomNode().insertBefore(movedSection, optionSections[newIndex].getDomNode());
+            }
         }
         if(optionsListeners != null){
             for(CoapOptionsListener listener: optionsListeners){
@@ -298,7 +304,7 @@ public class CoapRequest extends HttpTestRequest implements CoapOptionsDataSourc
         }
     }
 
-    private String getMediaTypeString(String optionValue){
+    private static String getMediaTypeString(String optionValue){
         Long mediaType = KnownOptions.decodeIntOptionValue(optionValue, 2);
         if(mediaType == null || mediaType == MediaTypeRegistry.UNDEFINED){
             return "";
