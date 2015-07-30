@@ -4,14 +4,11 @@ import com.eviware.soapui.support.editor.views.xml.raw.RawXmlEditor;
 import com.eviware.soapui.support.editor.xml.XmlDocument;
 import org.eclipse.californium.core.coap.Response;
 import com.eviware.soapui.SoapUI;
-import com.eviware.soapui.model.ModelItem;
-import com.eviware.soapui.plugins.auto.PluginResponseEditorView;
 import com.eviware.soapui.settings.UISettings;
 import com.eviware.soapui.support.editor.Editor;
 import com.eviware.soapui.support.editor.views.AbstractXmlEditorView;
 import com.eviware.soapui.support.editor.xml.XmlEditor;
 
-import javax.swing.BoxLayout;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
@@ -33,7 +30,7 @@ public class CoapResponseEditorView extends AbstractXmlEditorView<CoapResponseDo
     private JComponent component;
     private JLabel responseCodeLabel;
     private JLabel messageTypeLabel;
-    private OptionsEditingPane optionsPane;
+    private OptionsTable optionsView;
     //private JTextArea payloadMemo;
     private RawXmlEditor<XmlDocument> innerRawView;
 
@@ -76,16 +73,16 @@ public class CoapResponseEditorView extends AbstractXmlEditorView<CoapResponseDo
             messageTypeLabel = new JLabel();
             mainPanel.add(messageTypeLabel, new GridBagConstraints(1, 1, 1, 1, 0, 0, GridBagConstraints.BASELINE_LEADING, GridBagConstraints.NONE, getDefInsets(), 0, 0));
 
-            optionsPane = new OptionsEditingPane();
-            optionsPane.setEditable(false);
-            Expander optionsExpander = new Expander("Response Options", optionsPane, false, 200, 220);
+            optionsView = new OptionsTable();
+            optionsView.setEditable(false);
+            JPanel pnl1 = new JPanel(new BorderLayout(0, 0));
+            pnl1.add(new JScrollPane(optionsView), BorderLayout.CENTER); //workaround on lazy JScrollPane repainting
+            Expander optionsExpander = new Expander("Response Options", pnl1, false, 200, 220);
             mainPanel.add(optionsExpander, new GridBagConstraints(0, 2, 2, 1, 0, 0, GridBagConstraints.NORTHWEST, GridBagConstraints.HORIZONTAL, getDefInsets(), 0, 0));
 
-//            payloadMemo = new JTextArea();
-//            payloadMemo.setEditable(false);
-            JPanel pnl = new JPanel(new BorderLayout(0, 0));
-            pnl.add(innerRawView.getComponent(), BorderLayout.CENTER); //workaround on lazy JScrollPane repainting
-            Expander payloadExpander = new Expander("Response Payload", pnl, true, 200, 400);
+            JPanel pnl2 = new JPanel(new BorderLayout(0, 0));
+            pnl2.add(innerRawView.getComponent(), BorderLayout.CENTER); //workaround on lazy JScrollPane repainting
+            Expander payloadExpander = new Expander("Response Payload", pnl2, true, 200, 400);
             mainPanel.add(payloadExpander, new GridBagConstraints(0, 3, 2, 1, 0, 0, GridBagConstraints.NORTHWEST, GridBagConstraints.HORIZONTAL, getDefInsets(), 0, 0));
 
             JPanel dummyPanel = new JPanel();
@@ -125,12 +122,12 @@ public class CoapResponseEditorView extends AbstractXmlEditorView<CoapResponseDo
         if(message == null || resp == null) {
             responseCodeLabel.setText("");
             messageTypeLabel.setText("");
-            optionsPane.setData(null);
+            optionsView.setData(null);
         }
         else{
             responseCodeLabel.setText(message.getCode().toString() + " " + Utils.responseCodeToText(resp.getStatusCode()));
             messageTypeLabel.setText(message.getType().toString());
-            optionsPane.setData(new ResponseOptionsDataSource(message));
+            optionsView.setData(new ResponseOptionsDataSource(message));
         }
         //payloadMemo.setText(getRawPayloadAsString(resp));
     }

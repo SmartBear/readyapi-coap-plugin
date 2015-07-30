@@ -8,37 +8,26 @@ import com.eviware.soapui.impl.rest.support.handlers.JsonXmlSerializer;
 import com.eviware.soapui.impl.support.AbstractHttpRequest;
 import com.eviware.soapui.impl.support.http.HttpRequest;
 import com.eviware.soapui.impl.support.panels.AbstractHttpXmlRequestDesktopPanel;
-import com.eviware.soapui.model.iface.Request;
 import com.eviware.soapui.plugins.auto.PluginRequestEditorView;
-import com.eviware.soapui.plugins.auto.PluginResponseEditorView;
 import com.eviware.soapui.support.DocumentListenerAdapter;
 import com.eviware.soapui.support.editor.Editor;
 import com.eviware.soapui.support.editor.views.AbstractXmlEditorView;
-import com.eviware.soapui.support.editor.xml.XmlEditor;
 import com.eviware.soapui.support.propertyexpansion.PropertyExpansionPopupListener;
 import com.eviware.soapui.support.xml.SyntaxEditorUtil;
 import com.eviware.soapui.support.xml.XmlUtils;
-import com.jgoodies.binding.adapter.Bindings;
-import com.jgoodies.binding.beans.PropertyAdapter;
 import com.jgoodies.binding.beans.PropertyConnector;
 import net.sf.json.JSON;
-import org.eclipse.californium.core.coap.MediaTypeRegistry;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 
-import javax.swing.JButton;
 import javax.swing.JComponent;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.text.Document;
-import java.awt.BorderLayout;
 import java.awt.Dimension;
-import java.awt.Font;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.beans.PropertyChangeEvent;
 
 import static com.eviware.soapui.support.JsonUtil.seemsToBeJsonContentType;
@@ -54,7 +43,7 @@ public class CoapRequestEditorView extends AbstractXmlEditorView<AbstractHttpXml
 
     public final static String VIEW_ID = "CoAP Request";
     private KnownOptions.MediaTypeComboBox contentFormatCombo;
-    private OptionsEditingPane optionsEditor;
+    private OptionsPane optionsEditor;
 
     public CoapRequestEditorView(Editor<?> editor, CoapRequest request) {
         super("Request", (CoapRequestTestStepPanel.CoapRequestEditor) editor, VIEW_ID);
@@ -76,15 +65,15 @@ public class CoapRequestEditorView extends AbstractXmlEditorView<AbstractHttpXml
             Expander paramsExpander = new Expander("Query Parameters", paramsTable, false, 200, 250);
             mainPanel.add(paramsExpander, new GridBagConstraints(0, 0, 1, 1, 0, 0, GridBagConstraints.NORTHWEST, GridBagConstraints.HORIZONTAL, getDefInsets(), 0, 0));
 
-            optionsEditor = new OptionsEditingPane(request);
+            optionsEditor = new OptionsPane(request);
             optionsEditor.setData(request);
             optionsEditor.setEditable(true);
-            final Expander optionsExpander = new Expander("Options", optionsEditor, true, 200, 250);
+            final Expander optionsExpander = new Expander("Options", optionsEditor, false, 200, 250);
             mainPanel.add(optionsExpander, new GridBagConstraints(0, 1, 1, 1, 0, 0, GridBagConstraints.NORTHWEST, GridBagConstraints.HORIZONTAL, getDefInsets(), 0, 0));
 
 
             JPanel bodyPanel = buildBodyPanel();
-            bodyExpander = new Expander("Payload", bodyPanel, true, 200, 300);
+            bodyExpander = new Expander("Payload", bodyPanel, true, 200, 400);
             mainPanel.add(bodyExpander, new GridBagConstraints(0, 2, 1, 1, 0, 0, GridBagConstraints.NORTHWEST, GridBagConstraints.HORIZONTAL, getDefInsets(), 0, 0));
             bodyExpander.setVisible(request.hasRequestBody());
 
