@@ -19,6 +19,7 @@ import javax.swing.ImageIcon;
 import javax.validation.constraints.NotNull;
 
 import java.util.ArrayList;
+import java.util.List;
 
 
 public class CoapRequest extends HttpTestRequest implements CoapOptionsDataSource {
@@ -28,6 +29,7 @@ public class CoapRequest extends HttpTestRequest implements CoapOptionsDataSourc
     private static final String CONFIRMABLE_ATTR = "confirmable";
     public static final String CONTENT_FORMAT_OPTION_BEAN_PROP = "contentFormatOption";
     public static final String CONFIRMABLE_BEAN_PROP = "confirmable";
+    public static final String RESPONSE_ETAG_BEAN_PROP = "responseEtag";
 
     private CoapRequestTestStep testStep;
     private ImageIcon validRequestIcon;
@@ -360,5 +362,19 @@ public class CoapRequest extends HttpTestRequest implements CoapOptionsDataSourc
     public void removeOptionsListener(CoapOptionsListener listener){
         if(optionsListeners == null) return;
         optionsListeners.remove(listener);
+    }
+
+    public String getResponseEtag(){
+        CoapResp response = (CoapResp)getResponse();
+        if(response == null) return null;
+        List<byte[]> etags = response.getResponseMessage().getOptions().getETags();
+        if(etags == null || etags.size() == 0) return null;
+        String result = "";
+        for(byte[] etag: etags){
+            String s = Utils.bytesToHexString(etag);
+            if(s != null) result += s;
+            result += ";";
+        }
+        return result.substring(0, result.length() - 1);
     }
 }

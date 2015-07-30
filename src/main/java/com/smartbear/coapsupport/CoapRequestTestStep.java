@@ -29,6 +29,7 @@ import javax.xml.namespace.QName;
 
 @PluginTestStep(typeName = "CoapRequestTestStep", name = "CoAP Request", description = "Sends a request using the CoAP protocol.", iconPath = "com/smartbear/coapsupport/coap_request_step.png")
 public class CoapRequestTestStep extends HttpTestRequestStep {
+    public final static String RESPONSE_ETAG_PROP = "ResponseETag";
 
     public CoapRequestTestStep(WsdlTestCase testCase, TestStepConfig testStepData, boolean forLoadTest) {
         super(testCase, correctTestStepData(testStepData), forLoadTest);
@@ -37,6 +38,7 @@ public class CoapRequestTestStep extends HttpTestRequestStep {
         deleteProperty("Username", false);
         deleteProperty("Password", false);
         deleteProperty("Domain", false);
+        addProperty(new TestStepBeanProperty(RESPONSE_ETAG_PROP, true, getRequest(), CoapRequest.RESPONSE_ETAG_BEAN_PROP, this));
     }
 
     @Override
