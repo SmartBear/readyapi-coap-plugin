@@ -1,9 +1,7 @@
 package com.smartbear.coapsupport;
 
 
-import com.eviware.fife.rsta.ac.java.Util;
 import org.eclipse.californium.core.coap.MediaTypeRegistry;
-import org.eclipse.californium.core.coap.Option;
 import com.eviware.soapui.SoapUI;
 import com.eviware.soapui.config.HttpRequestConfig;
 import com.eviware.soapui.impl.wsdl.teststeps.HttpTestRequest;
@@ -14,19 +12,13 @@ import com.eviware.soapui.support.UISupport;
 import org.apache.xmlbeans.XmlObject;
 
 import org.eclipse.californium.core.coap.OptionNumberRegistry;
-import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
-import org.w3c.dom.Text;
 
 import javax.swing.ImageIcon;
 import javax.validation.constraints.NotNull;
 
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
 
 
 public class CoapRequest extends HttpTestRequest implements CoapOptionsDataSource {
@@ -305,7 +297,7 @@ public class CoapRequest extends HttpTestRequest implements CoapOptionsDataSourc
     }
 
     private static String getMediaTypeString(String optionValue){
-        Long mediaType = KnownOptions.decodeIntOptionValue(optionValue, 2);
+        Long mediaType = OptionsSupport.decodeIntOptionValue(optionValue, 2);
         if(mediaType == null || mediaType == MediaTypeRegistry.UNDEFINED){
             return "";
         }
@@ -333,7 +325,7 @@ public class CoapRequest extends HttpTestRequest implements CoapOptionsDataSourc
         if(StringUtils.isNullOrEmpty(mediaType)) return;
         int number = MediaTypeRegistry.parse(mediaType);
         if(number == MediaTypeRegistry.UNDEFINED) return;
-        setContentFormatOption(KnownOptions.encodeIntOptionValue(number, 2));
+        setContentFormatOption(OptionsSupport.encodeIntOptionValue(number, 2));
     }
 
     public String getContentFormatOption(){

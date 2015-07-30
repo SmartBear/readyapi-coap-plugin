@@ -150,7 +150,7 @@ public class OptionsPane extends JPanel {
                 }
             }
             else{
-                return KnownOptions.editableRequestOptions[combo.getSelectedIndexes()[0]];
+                return OptionsSupport.editableRequestOptions[combo.getSelectedIndexes()[0]];
             }
 
         }
@@ -167,8 +167,8 @@ public class OptionsPane extends JPanel {
                 valueField.setProperty("preferredSize", dummyValueComponent.getPreferredSize());
 
                 final XFormOptionsField combo = (XFormOptionsField) dialog.getFormField(ChooseOptionNumberForm.OPTION);
-                final String[] optionNames = KnownOptions.getEditableRequestOptionsNames();
-                String[] comboItems = new String[KnownOptions.editableRequestOptions.length + 1];
+                final String[] optionNames = OptionsSupport.getEditableRequestOptionsNames();
+                String[] comboItems = new String[OptionsSupport.editableRequestOptions.length + 1];
                 System.arraycopy(optionNames, 0, comboItems, 1, optionNames.length);
                 combo.setOptions(comboItems);
                 combo.addFormFieldValidator(new XFormFieldValidator() {
@@ -195,7 +195,7 @@ public class OptionsPane extends JPanel {
                             editor = null;
                         }
                         else{
-                            Class<? extends TableCellEditor> clazz = KnownOptions.getOptionEditor(optionNumber);
+                            Class<? extends TableCellEditor> clazz = OptionsSupport.getOptionEditor(optionNumber);
                             if(clazz == null){
                                 dummyValueComponent.setEnabled(true);
                                 dummyValueComponent.setText("");

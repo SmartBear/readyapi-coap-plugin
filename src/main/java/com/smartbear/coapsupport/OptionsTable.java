@@ -49,7 +49,7 @@ public class OptionsTable extends JTable {
     @Override
     public TableCellRenderer getCellRenderer(int row, int column) {
         if(column == VALUE_COLUMN) {
-            Class<? extends TableCellRenderer> clazz = KnownOptions.getOptionRenderer(getOptionsTableModel().getDataSource().getOptionNumber(row));
+            Class<? extends TableCellRenderer> clazz = OptionsSupport.getOptionRenderer(getOptionsTableModel().getDataSource().getOptionNumber(row));
             if(clazz == null) return super.getCellRenderer(row, column);
             if(!renderers.containsKey(clazz)){
                 TableCellRenderer renderer = null;
@@ -70,7 +70,7 @@ public class OptionsTable extends JTable {
     @Override
     public TableCellEditor getCellEditor(int row, int column) {
         if(column == VALUE_COLUMN) {
-            Class<? extends TableCellEditor> clazz = KnownOptions.getOptionEditor(getOptionsTableModel().getDataSource().getOptionNumber(row));
+            Class<? extends TableCellEditor> clazz = OptionsSupport.getOptionEditor(getOptionsTableModel().getDataSource().getOptionNumber(row));
             if(clazz == null) return super.getCellEditor(row, column);
             if(!editors.containsKey(clazz)){
                 TableCellEditor editor = null;

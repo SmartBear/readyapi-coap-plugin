@@ -19,7 +19,7 @@ import java.awt.event.FocusEvent;
 import java.awt.event.KeyEvent;
 
 
-public class KnownOptions {
+public class OptionsSupport {
 
     public static int[] editableRequestOptions = {OptionNumberRegistry.ACCEPT, OptionNumberRegistry.CONTENT_FORMAT, OptionNumberRegistry.ETAG};
 

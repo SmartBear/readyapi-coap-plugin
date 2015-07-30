@@ -42,7 +42,7 @@ public class CoapRequestEditorView extends AbstractXmlEditorView<AbstractHttpXml
     private Expander bodyExpander;
 
     public final static String VIEW_ID = "CoAP Request";
-    private KnownOptions.MediaTypeComboBox contentFormatCombo;
+    private OptionsSupport.MediaTypeComboBox contentFormatCombo;
     private OptionsPane optionsEditor;
 
     public CoapRequestEditorView(Editor<?> editor, CoapRequest request) {
@@ -95,10 +95,10 @@ public class CoapRequestEditorView extends AbstractXmlEditorView<AbstractHttpXml
         JPanel bodyPanel = new JPanel(new GridBagLayout());
 
         JLabel label = new JLabel("Content format:");
-        contentFormatCombo = new KnownOptions.MediaTypeComboBox();
+        contentFormatCombo = new OptionsSupport.MediaTypeComboBox();
         label.setLabelFor(contentFormatCombo);
         //Bindings.bind(contentFormatCombo, KnownOptions.MediaTypeComboBox.VALUE_BEAN_PROP, new PropertyAdapter<CoapRequest>(request, CoapRequest.CONTENT_FORMAT_OPTION_BEAN_PROP));
-        PropertyConnector connector = PropertyConnector.connect(request, CoapRequest.CONTENT_FORMAT_OPTION_BEAN_PROP, contentFormatCombo, KnownOptions.MediaTypeComboBox.VALUE_BEAN_PROP);
+        PropertyConnector connector = PropertyConnector.connect(request, CoapRequest.CONTENT_FORMAT_OPTION_BEAN_PROP, contentFormatCombo, OptionsSupport.MediaTypeComboBox.VALUE_BEAN_PROP);
         connector.updateProperty2();
         bodyPanel.add(label, new GridBagConstraints(0, 0, 1, 1, 0, 0, GridBagConstraints.BASELINE_LEADING, GridBagConstraints.NONE, getDefInsets(), 0, 0));
         bodyPanel.add(contentFormatCombo, new GridBagConstraints(1, 0, 1, 1, 0, 0, GridBagConstraints.BASELINE_LEADING, GridBagConstraints.NONE, getDefInsets(), 0, 0));
