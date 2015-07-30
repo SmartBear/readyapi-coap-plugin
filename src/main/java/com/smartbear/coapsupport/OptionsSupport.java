@@ -20,8 +20,9 @@ import java.awt.event.KeyEvent;
 
 
 public class OptionsSupport {
+    public enum OptionType{Uint, String, Opaque, Empty, Unknown};
 
-    public static int[] editableRequestOptions = {OptionNumberRegistry.ACCEPT, OptionNumberRegistry.CONTENT_FORMAT, OptionNumberRegistry.ETAG};
+    public static int[] editableRequestOptions = {OptionNumberRegistry.ACCEPT, OptionNumberRegistry.CONTENT_FORMAT, OptionNumberRegistry.ETAG, OptionNumberRegistry.IF_MATCH, OptionNumberRegistry.IF_NONE_MATCH};
 
     public static String[] getEditableRequestOptionsNames(){
         String[] result = new String[editableRequestOptions.length];
@@ -37,7 +38,7 @@ public class OptionsSupport {
             case OptionNumberRegistry.ACCEPT: case OptionNumberRegistry.CONTENT_FORMAT:
                 return MediaTypeOptionRenderer.class;
             default:
-                if(OptionNumberRegistry.getFormatByNr(optionNumber) == OptionNumberRegistry.optionFormats.INTEGER){
+                if(OptionsSupport.getOptionType(optionNumber) == OptionType.Uint){
                     return UIntOptionRenderer.class;
                 }
                 else {
@@ -51,16 +52,29 @@ public class OptionsSupport {
             return MediaTypeOptionEditor.class;
         }
         else{
-            switch (OptionNumberRegistry.getFormatByNr(optionNumber)){
-                case STRING:
+            switch (OptionsSupport.getOptionType(optionNumber)){
+                case Empty:
+                    return EmptyOptionEditor.class;
+                case String:
                     return StringOptionEditor.class;
-                case INTEGER:
+                case Uint:
                     return UIntOptionEditor.class;
-                case OPAQUE: case UNKNOWN:
+                case Opaque: case Unknown:
                     return OpaqueOptionEditor.class;
             }
         }
         return null;
+    }
+
+    public static OptionType getOptionType(int optionNumber){
+        if(optionNumber == OptionNumberRegistry.IF_NONE_MATCH) return OptionType.Empty;
+        switch (OptionNumberRegistry.getFormatByNr(optionNumber)){
+            case INTEGER: return OptionType.Uint;
+            case OPAQUE: return OptionType.Opaque;
+            case STRING: return OptionType.String;
+            case UNKNOWN: return OptionType.Unknown;
+        }
+        return OptionType.Unknown;
     }
 
 
@@ -368,4 +382,26 @@ public class OptionsSupport {
             return editor.getText();
         }
     }
+
+    public static class EmptyOptionEditor extends AbstractCellEditor implements TableCellEditor{
+        private JTextField editor;
+        public EmptyOptionEditor(ModelItem modelItem){
+        }
+
+        @Override
+        public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
+            if(editor == null){
+                editor = new JTextField(20);
+                editor.setEnabled(false);
+                editor.setToolTipText("This option must have empty value.");
+            }
+            return editor;
+        }
+
+        @Override
+        public Object getCellEditorValue() {
+            return "";
+        }
+    }
+
 }

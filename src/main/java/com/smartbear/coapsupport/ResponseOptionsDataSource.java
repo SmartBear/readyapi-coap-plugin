@@ -28,10 +28,10 @@ public class ResponseOptionsDataSource implements CoapOptionsDataSource {
     @Override
     public String getOptionValue(int optionIndex) {
         Option option = options.get(optionIndex);
-        switch (OptionNumberRegistry.getFormatByNr(option.getNumber())){
-            case STRING:
+        switch (OptionsSupport.getOptionType(option.getNumber())){
+            case String:
                 return option.getStringValue();
-            case OPAQUE: case UNKNOWN: case INTEGER:
+            case Opaque: case Unknown: case Uint: case Empty:
                 if(option.getValue() == null || option.getValue().length == 0) return "";
                 return "0x" + Utils.bytesToHexString(option.getValue());
         }
