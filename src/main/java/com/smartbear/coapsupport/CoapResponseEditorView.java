@@ -1,5 +1,7 @@
 package com.smartbear.coapsupport;
 
+import com.eviware.soapui.support.editor.views.xml.raw.RawXmlEditor;
+import com.eviware.soapui.support.editor.xml.XmlDocument;
 import org.eclipse.californium.core.coap.Response;
 import com.eviware.soapui.SoapUI;
 import com.eviware.soapui.model.ModelItem;
@@ -23,23 +25,39 @@ import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.util.Arrays;
 
-@PluginResponseEditorView(viewId = "CoAP Message", targetClass = CoapRequest.class)
+//@PluginResponseEditorView(viewId = "CoAP Message", targetClass = CoapRequest.class)
 public class CoapResponseEditorView extends AbstractXmlEditorView<CoapResponseDocument> {
+
 
     private JTextArea memo;
     private JComponent component;
     private JLabel responseCodeLabel;
     private JLabel messageTypeLabel;
     private OptionsEditingPane optionsPane;
-    private JTextArea payloadMemo;
+    //private JTextArea payloadMemo;
+    private RawXmlEditor<XmlDocument> innerRawView;
 
-    public CoapResponseEditorView(Editor<?> editor, CoapRequest request) {
-        super("CoAP Message", (XmlEditor<CoapResponseDocument>)editor, "CoAP Message");
+
+    public CoapResponseEditorView(Editor<?> editor, CoapRequest request, String viewId, RawXmlEditor<XmlDocument> innerRawView) {
+        super("Response", (XmlEditor<CoapResponseDocument>)editor, viewId);
+        this.innerRawView = innerRawView;
     }
 
     @Override
     public boolean saveDocument(boolean validate) {
         return false;
+    }
+
+    @Override
+    public void release() {
+        innerRawView.release();
+        super.release();
+    }
+
+    @Override
+    public void setDocument(CoapResponseDocument xmlDocument) {
+        super.setDocument(xmlDocument);
+        innerRawView.setDocument(xmlDocument);
     }
 
     @Override
@@ -63,11 +81,11 @@ public class CoapResponseEditorView extends AbstractXmlEditorView<CoapResponseDo
             Expander optionsExpander = new Expander("Response Options", optionsPane, false, 200, 220);
             mainPanel.add(optionsExpander, new GridBagConstraints(0, 2, 2, 1, 0, 0, GridBagConstraints.NORTHWEST, GridBagConstraints.HORIZONTAL, getDefInsets(), 0, 0));
 
-            payloadMemo = new JTextArea();
-            payloadMemo.setEditable(false);
+//            payloadMemo = new JTextArea();
+//            payloadMemo.setEditable(false);
             JPanel pnl = new JPanel(new BorderLayout(0, 0));
-            pnl.add(new JScrollPane(payloadMemo), BorderLayout.CENTER); //workaround on lazy JScrollPane repainting
-            Expander payloadExpander = new Expander("Response Payload", pnl, true, 200, 300);
+            pnl.add(innerRawView.getComponent(), BorderLayout.CENTER); //workaround on lazy JScrollPane repainting
+            Expander payloadExpander = new Expander("Response Payload", pnl, true, 200, 400);
             mainPanel.add(payloadExpander, new GridBagConstraints(0, 3, 2, 1, 0, 0, GridBagConstraints.NORTHWEST, GridBagConstraints.HORIZONTAL, getDefInsets(), 0, 0));
 
             JPanel dummyPanel = new JPanel();
@@ -114,7 +132,7 @@ public class CoapResponseEditorView extends AbstractXmlEditorView<CoapResponseDo
             messageTypeLabel.setText(message.getType().toString());
             optionsPane.setData(new ResponseOptionsDataSource(message));
         }
-        payloadMemo.setText(getRawPayloadAsString(resp));
+        //payloadMemo.setText(getRawPayloadAsString(resp));
     }
 
     public String getRawPayloadAsString(CoapResp resp) {

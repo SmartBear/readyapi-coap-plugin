@@ -36,7 +36,9 @@ import com.eviware.soapui.support.components.JXToolBar;
 import com.eviware.soapui.support.editor.EditorView;
 import com.eviware.soapui.support.editor.views.xml.outline.XmlOutlineEditorView;
 import com.eviware.soapui.support.editor.views.xml.outline.support.XmlObjectTree;
+import com.eviware.soapui.support.editor.views.xml.raw.RawXmlEditor;
 import com.eviware.soapui.support.editor.views.xml.raw.RawXmlEditorFactory;
+import com.eviware.soapui.support.editor.xml.XmlDocument;
 import com.eviware.soapui.support.log.JLogList;
 import com.eviware.soapui.ui.desktop.DesktopPanel;
 import com.eviware.soapui.ui.support.ModelItemDesktopPanel;
@@ -77,6 +79,9 @@ public class CoapRequestTestStepPanel extends AbstractHttpXmlRequestDesktopPanel
     private InternalAssertionsListener assertionsListener = new InternalAssertionsListener();
     private long startTime;
     private JButton addAssertionButton;
+    private JUndoableTextField endpointEdit;
+    private JCheckBox confirmableCheckBox;
+    private JComboBox<RestRequestInterface.HttpMethod> methodCombo;
 
     public CoapRequestTestStepPanel(CoapRequestTestStep modelItem) {
         super(modelItem, modelItem.getRequest());
@@ -200,17 +205,17 @@ public class CoapRequestTestStepPanel extends AbstractHttpXmlRequestDesktopPanel
     }
 
     protected void addToolbarComponents(JXToolBar toolbar) {
-        JComboBox<RestRequestInterface.HttpMethod> methodCombo = new JComboBox<>();
+        methodCombo = new JComboBox<RestRequestInterface.HttpMethod>();
         Bindings.bind(methodCombo, new SelectionInList<RestRequestInterface.HttpMethod>(new RestRequestInterface.HttpMethod[]{RestRequestInterface.HttpMethod.GET, RestRequestInterface.HttpMethod.POST, RestRequestInterface.HttpMethod.PUT, RestRequestInterface.HttpMethod.DELETE}, new PropertyAdapter<CoapRequest>(getTestStep().getRequest(), "method")));
         toolbar.addLabeledFixed("Method:", methodCombo);
 
-        JUndoableTextField endpointEdit = new JUndoableTextField(50);
+        endpointEdit = new JUndoableTextField(50);
         Bindings.bind(endpointEdit, new PropertyAdapter<CoapRequest>(getTestStep().getRequest(), "endpoint"));
         toolbar.addLabeledFixed("Request Endpoint:", endpointEdit);
 
-        JCheckBox conf = new JCheckBox("Confirmable Request");
-        Bindings.bind(conf, new PropertyAdapter<CoapRequest>(getTestStep().getRequest(), CoapRequest.CONFIRMABLE_BEAN_PROP));
-        toolbar.add(conf);
+        confirmableCheckBox = new JCheckBox("Confirmable Request");
+        Bindings.bind(confirmableCheckBox, new PropertyAdapter<CoapRequest>(getTestStep().getRequest(), CoapRequest.CONFIRMABLE_BEAN_PROP));
+        toolbar.add(confirmableCheckBox);
     }
 
     @Override
@@ -223,6 +228,9 @@ public class CoapRequestTestStepPanel extends AbstractHttpXmlRequestDesktopPanel
         super.setEnabled(enabled);
         addAssertionButton.setEnabled(enabled);
         assertionsPanel.setEnabled(enabled);
+        methodCombo.setEnabled(enabled);
+        endpointEdit.setEnabled(enabled);
+        confirmableCheckBox.setEnabled(enabled);
 
         if (SoapUI.getTestMonitor().hasRunningLoadTest(getRequest().getTestCase())
                 || SoapUI.getTestMonitor().hasRunningSecurityTest(getModelItem().getTestCase())) {
@@ -378,8 +386,6 @@ public class CoapRequestTestStepPanel extends AbstractHttpXmlRequestDesktopPanel
         @Override
         public void addEditorView(EditorView editorView) {
             if(getView(editorView.getViewId()) != null) return;
-//            if(HttpRequestContentViewFactory.VIEW_ID.equals(editorView.getViewId())) return;
-//            if(RawXmlEditorFactory.VIEW_ID.equals(editorView.getViewId())) return;
             super.addEditorView(editorView);
         }
 
@@ -398,7 +404,13 @@ public class CoapRequestTestStepPanel extends AbstractHttpXmlRequestDesktopPanel
         @Override
         public void addEditorView(EditorView editorView) {
             if(getView(editorView.getViewId()) != null) return;
-            super.addEditorView(editorView);
+            if(RawXmlEditorFactory.VIEW_ID.equals(editorView.getViewId())){
+                CoapResponseEditorView coapResponseView = new CoapResponseEditorView(this, getRequest(), RawXmlEditorFactory.VIEW_ID, (RawXmlEditor < XmlDocument >) editorView);
+                super.addEditorView(coapResponseView);
+            }
+            else {
+                super.addEditorView(editorView);
+            }
         }
 
         @Override

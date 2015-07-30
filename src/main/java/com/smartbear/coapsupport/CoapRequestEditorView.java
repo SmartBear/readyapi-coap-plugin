@@ -53,6 +53,8 @@ public class CoapRequestEditorView extends AbstractXmlEditorView<AbstractHttpXml
     private Expander bodyExpander;
 
     public final static String VIEW_ID = "CoAP Request";
+    private KnownOptions.MediaTypeComboBox contentFormatCombo;
+    private OptionsEditingPane optionsEditor;
 
     public CoapRequestEditorView(Editor<?> editor, CoapRequest request) {
         super("Request", (CoapRequestTestStepPanel.CoapRequestEditor) editor, VIEW_ID);
@@ -74,7 +76,7 @@ public class CoapRequestEditorView extends AbstractXmlEditorView<AbstractHttpXml
             Expander paramsExpander = new Expander("Query Parameters", paramsTable, false, 200, 250);
             mainPanel.add(paramsExpander, new GridBagConstraints(0, 0, 1, 1, 0, 0, GridBagConstraints.NORTHWEST, GridBagConstraints.HORIZONTAL, getDefInsets(), 0, 0));
 
-            OptionsEditingPane optionsEditor = new OptionsEditingPane(request);
+            optionsEditor = new OptionsEditingPane(request);
             optionsEditor.setData(request);
             optionsEditor.setEditable(true);
             final Expander optionsExpander = new Expander("Options", optionsEditor, true, 200, 250);
@@ -104,7 +106,7 @@ public class CoapRequestEditorView extends AbstractXmlEditorView<AbstractHttpXml
         JPanel bodyPanel = new JPanel(new GridBagLayout());
 
         JLabel label = new JLabel("Content format:");
-        KnownOptions.MediaTypeComboBox contentFormatCombo = new KnownOptions.MediaTypeComboBox();
+        contentFormatCombo = new KnownOptions.MediaTypeComboBox();
         label.setLabelFor(contentFormatCombo);
         //Bindings.bind(contentFormatCombo, KnownOptions.MediaTypeComboBox.VALUE_BEAN_PROP, new PropertyAdapter<CoapRequest>(request, CoapRequest.CONTENT_FORMAT_OPTION_BEAN_PROP));
         PropertyConnector connector = PropertyConnector.connect(request, CoapRequest.CONTENT_FORMAT_OPTION_BEAN_PROP, contentFormatCombo, KnownOptions.MediaTypeComboBox.VALUE_BEAN_PROP);
@@ -137,7 +139,9 @@ public class CoapRequestEditorView extends AbstractXmlEditorView<AbstractHttpXml
 
     @Override
     public void setEditable(boolean enabled) {
-
+        contentEditor.setEditable(enabled);
+        contentFormatCombo.setEnabled(enabled);
+        optionsEditor.setEditable(enabled);
     }
 
     protected RestParamsTable buildParamsTable() {
