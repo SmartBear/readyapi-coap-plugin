@@ -141,7 +141,8 @@ public class OptionsSupport {
                 if(rawValue != null && rawValue.startsWith("0x")) setText(rawValue.substring(2)); else setText(rawValue);
                 return;
             }
-            setText("0x" + Long.toHexString(intValue));
+            //setText("0x" + Long.toHexString(intValue));
+            setText(Long.toString(intValue));
         }
 
     }
@@ -312,7 +313,7 @@ public class OptionsSupport {
     }
 
     public static class UIntOptionEditor extends AbstractCellEditor implements TableCellEditor {
-        private JTextField component = new JTextField();
+        private JTextField component = new JTextField(20);
         private String initialValue;
 
         public UIntOptionEditor(ModelItem modelItem){}
@@ -325,7 +326,8 @@ public class OptionsSupport {
                 if(initialValue != null && initialValue.startsWith("0x")) component.setText(initialValue.substring(2)); else component.setText(initialValue);
             }
             else {
-                component.setText("0x" + Long.toHexString(longValue));
+                //component.setText("0x" + Long.toHexString(longValue));
+                component.setText(Long.toString(longValue));
             }
             return component;
         }
