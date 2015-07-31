@@ -84,7 +84,7 @@ public class CoapTransport implements RequestTransport {
 
             if(param.getStyle() == RestParamsPropertyHolder.ParameterStyle.QUERY){
                 for (String valuePart : valueParts) {
-                    if (query.length() > 0) {
+                    if (query.length() > 0 || endpoint.contains("?")) {
                         query.append('&');
                     }
                     else{
