@@ -1,6 +1,8 @@
 package com.smartbear.coapsupport;
 
 
+import com.eviware.soapui.impl.wsdl.submit.transports.http.HttpResponse;
+import com.eviware.soapui.model.iface.SubmitContext;
 import org.eclipse.californium.core.coap.MediaTypeRegistry;
 import com.eviware.soapui.SoapUI;
 import com.eviware.soapui.config.HttpRequestConfig;
@@ -30,6 +32,7 @@ public class CoapRequest extends HttpTestRequest implements CoapOptionsDataSourc
     public static final String CONTENT_FORMAT_OPTION_BEAN_PROP = "contentFormatOption";
     public static final String CONFIRMABLE_BEAN_PROP = "confirmable";
     public static final String RESPONSE_ETAG_BEAN_PROP = "responseEtag";
+    public static final String RESPONSE_LOCATION_BEAN_PROP = "responseLocation";
 
     private CoapRequestTestStep testStep;
     private ImageIcon validRequestIcon;
@@ -83,17 +86,17 @@ public class CoapRequest extends HttpTestRequest implements CoapOptionsDataSourc
         return icon;
     }
 
-    public boolean getConfirmable(){
+    public boolean getConfirmable() {
         Element element = (Element) getConfig().getDomNode();
         String rawValue = element.getAttributeNS(null, CONFIRMABLE_ATTR);
-        if(StringUtils.isNullOrEmpty(rawValue)) return true;
+        if (StringUtils.isNullOrEmpty(rawValue)) return true;
         return Boolean.valueOf(rawValue);
 
     }
 
-    public void setConfirmable(boolean newValue){
+    public void setConfirmable(boolean newValue) {
         boolean oldConfirmable = getConfirmable();
-        if(newValue  !=  oldConfirmable) {
+        if (newValue != oldConfirmable) {
             Element element = (Element) getConfig().getDomNode();
             element.setAttributeNS(null, CONFIRMABLE_ATTR, Boolean.toString(newValue));
             notifyPropertyChanged(CONFIRMABLE_BEAN_PROP, oldConfirmable, newValue);
@@ -104,33 +107,33 @@ public class CoapRequest extends HttpTestRequest implements CoapOptionsDataSourc
         return testStep;
     }
 
-    public void updateConfig(HttpRequestConfig request){
+    public void updateConfig(HttpRequestConfig request) {
         String oldContentFormat = getContentFormatOption();
         super.updateConfig(request);
-        if(optionsListeners != null){
-            for(CoapOptionsListener listener: optionsListeners){
+        if (optionsListeners != null) {
+            for (CoapOptionsListener listener : optionsListeners) {
                 listener.onWholeOptionListChanged();
             }
         }
         String newContentFormat = getContentFormatOption();
-        if(Utils.areStringsEqual(oldContentFormat, newContentFormat, true, false)){
+        if (Utils.areStringsEqual(oldContentFormat, newContentFormat, true, false)) {
             notifyPropertyChanged(CONTENT_FORMAT_OPTION_BEAN_PROP, oldContentFormat, newContentFormat);
         }
     }
 
-    private static String getElementText(XmlObject obj){
+    private static String getElementText(XmlObject obj) {
         return getElementText((Element) obj.getDomNode());
     }
 
-    private static String getElementText(Element element){
+    private static String getElementText(Element element) {
         String result = "";
         Node child = element.getFirstChild();
-        while (child != null){
-           if(child.getNodeType() == Node.TEXT_NODE){
+        while (child != null) {
+            if (child.getNodeType() == Node.TEXT_NODE) {
                 result += child.getNodeValue();
             }
             child = child.getNextSibling();
-        };
+        }
         return result;
     }
 
@@ -156,7 +159,7 @@ public class CoapRequest extends HttpTestRequest implements CoapOptionsDataSourc
         return optionNumber;
     }
 
-    private String readOptionValue(Element optionSection){
+    private String readOptionValue(Element optionSection) {
         return optionSection.getAttribute(OPTION_VALUE_ATTR);
     }
 
@@ -177,11 +180,11 @@ public class CoapRequest extends HttpTestRequest implements CoapOptionsDataSourc
 //        return new OptionEx(optionNumber, value);
 //    }
 
-    private Element getOptionSection(int optionIndex){
+    private Element getOptionSection(int optionIndex) {
         String path = String.format("$this/%s[%d]", OPTION_SECTION, optionIndex + 1);
         XmlObject[] pathResult = getConfig().selectPath(path);
-        if(pathResult == null || pathResult.length == 0) return null;
-        return (Element)pathResult[0].getDomNode();
+        if (pathResult == null || pathResult.length == 0) return null;
+        return (Element) pathResult[0].getDomNode();
     }
 
     @Override
@@ -202,21 +205,21 @@ public class CoapRequest extends HttpTestRequest implements CoapOptionsDataSourc
         Element optionSection = getOptionSection(optionIndex);
 
         String oldOptionValue = readOptionValue(optionSection);
-        if(Utils.areStringsEqual(oldOptionValue, optionValue, false, true)) return;
+        if (Utils.areStringsEqual(oldOptionValue, optionValue, false, true)) return;
 
         int optionNumber = readOptionNumber(optionSection);
-        if(optionValue == null || optionValue.length() == 0){
+        if (optionValue == null || optionValue.length() == 0) {
             optionSection.removeAttribute(OPTION_VALUE_ATTR);
         }
-        else{
+        else {
             optionSection.setAttribute(OPTION_VALUE_ATTR, optionValue);
         }
-        if(optionsListeners != null){
-            for(CoapOptionsListener listener: optionsListeners){
+        if (optionsListeners != null) {
+            for (CoapOptionsListener listener : optionsListeners) {
                 listener.onOptionChanged(optionIndex, optionNumber, optionNumber, oldOptionValue, optionValue);
             }
         }
-        if(optionNumber == OptionNumberRegistry.CONTENT_FORMAT){
+        if (optionNumber == OptionNumberRegistry.CONTENT_FORMAT) {
             notifyPropertyChanged(CONTENT_FORMAT_OPTION_BEAN_PROP, oldOptionValue, optionValue == null ? "" : optionValue);
         }
     }
@@ -225,25 +228,30 @@ public class CoapRequest extends HttpTestRequest implements CoapOptionsDataSourc
     public int addOption(int optionNumber, String optionValue) {
         Element newOptionSection = getConfig().getDomNode().getOwnerDocument().createElement(OPTION_SECTION);
         newOptionSection.setAttribute(OPTION_NUMBER_ATTR, Integer.toString(optionNumber));
-        if(optionValue != null && optionValue.length() != 0) {
+        if (optionValue != null && optionValue.length() != 0) {
             newOptionSection.setAttribute(OPTION_VALUE_ATTR, optionValue);
         }
 
         XmlObject[] optionSections = getConfig().selectPath("$this/" + OPTION_SECTION);
         int pos;
         Element optionSection = null;
-        for(pos = 0; pos < optionSections.length; ++pos){
+        for (pos = 0; pos < optionSections.length; ++pos) {
             optionSection = (Element) optionSections[pos].getDomNode();
             int curOptionNumber = readOptionNumber(optionSection);
-            if(optionNumber > curOptionNumber) break;
+            if (optionNumber > curOptionNumber) break;
         }
-        if(pos == optionSections.length) getConfig().getDomNode().appendChild(newOptionSection); else getConfig().getDomNode().insertBefore(newOptionSection, optionSection);
-        if(optionsListeners != null){
-            for(CoapOptionsListener listener: optionsListeners){
+        if (pos == optionSections.length){
+            getConfig().getDomNode().appendChild(newOptionSection);
+        }
+        else{
+            getConfig().getDomNode().insertBefore(newOptionSection, optionSection);
+        }
+        if (optionsListeners != null) {
+            for (CoapOptionsListener listener : optionsListeners) {
                 listener.onOptionAdded(pos, optionNumber, optionValue);
             }
         }
-        if(optionNumber == OptionNumberRegistry.CONTENT_FORMAT){
+        if (optionNumber == OptionNumberRegistry.CONTENT_FORMAT) {
             notifyPropertyChanged(CONTENT_FORMAT_OPTION_BEAN_PROP, null, optionValue == null ? "" : optionValue);
         }
         return pos;
@@ -255,12 +263,12 @@ public class CoapRequest extends HttpTestRequest implements CoapOptionsDataSourc
         String oldOption = readOptionValue(optionSection);
         int oldOptionNumber = readOptionNumber(optionSection);
         getConfig().getDomNode().removeChild(optionSection);
-        if(optionsListeners != null){
-            for(CoapOptionsListener listener: optionsListeners){
+        if (optionsListeners != null) {
+            for (CoapOptionsListener listener : optionsListeners) {
                 listener.onOptionRemoved(optionIndex, oldOptionNumber, oldOption);
             }
         }
-        if(oldOptionNumber == OptionNumberRegistry.CONTENT_FORMAT){
+        if (oldOptionNumber == OptionNumberRegistry.CONTENT_FORMAT) {
             notifyPropertyChanged(CONTENT_FORMAT_OPTION_BEAN_PROP, oldOption, null);
         }
     }
@@ -268,43 +276,43 @@ public class CoapRequest extends HttpTestRequest implements CoapOptionsDataSourc
 
     @Override
     public void moveOption(int optionIndex, int delta) {
-        if(delta == 0) return;
+        if (delta == 0) return;
         XmlObject[] optionSections = getConfig().selectPath("$this/" + OPTION_SECTION);
         int optionNumber = readOptionNumber(optionSections[optionIndex]);
         String optionValue = readOptionValue(optionSections[optionIndex]);
         Node movedSection = optionSections[optionIndex].getDomNode();
         getConfig().getDomNode().removeChild(movedSection);
-        if(optionsListeners != null){
-            for(CoapOptionsListener listener: optionsListeners){
+        if (optionsListeners != null) {
+            for (CoapOptionsListener listener : optionsListeners) {
                 listener.onOptionRemoved(optionIndex, optionNumber, optionValue);
             }
         }
         int newIndex = optionIndex + delta;
-        if(newIndex == optionSections.length - 1) {
+        if (newIndex == optionSections.length - 1) {
             getConfig().getDomNode().appendChild(movedSection);
         }
         else {
-            if(delta > 0) {
+            if (delta > 0) {
                 getConfig().getDomNode().insertBefore(movedSection, optionSections[newIndex + 1].getDomNode());
             }
-            else{
+            else {
                 getConfig().getDomNode().insertBefore(movedSection, optionSections[newIndex].getDomNode());
             }
         }
-        if(optionsListeners != null){
-            for(CoapOptionsListener listener: optionsListeners){
+        if (optionsListeners != null) {
+            for (CoapOptionsListener listener : optionsListeners) {
                 listener.onOptionAdded(optionIndex, optionNumber, optionValue);
             }
         }
     }
 
-    private static String getMediaTypeString(String optionValue){
+    private static String getMediaTypeString(String optionValue) {
         Long mediaType = OptionsSupport.decodeIntOptionValue(optionValue, 2);
-        if(mediaType == null || mediaType == MediaTypeRegistry.UNDEFINED){
+        if (mediaType == null || mediaType == MediaTypeRegistry.UNDEFINED) {
             return "";
         }
-        for(int it: MediaTypeRegistry.getAllMediaTypes()){
-            if(mediaType == it) return MediaTypeRegistry.toString(mediaType.intValue());
+        for (int it : MediaTypeRegistry.getAllMediaTypes()) {
+            if (mediaType == it) return MediaTypeRegistry.toString(mediaType.intValue());
         }
         return "";
 
@@ -315,37 +323,37 @@ public class CoapRequest extends HttpTestRequest implements CoapOptionsDataSourc
         return getMediaTypeString(getContentFormatOption());
     }
 
-    private void contenfFomatChanged(String oldValue, String newValue){
+    private void contenfFomatChanged(String oldValue, String newValue) {
         notifyPropertyChanged(CONTENT_FORMAT_OPTION_BEAN_PROP, oldValue == null ? "" : oldValue, newValue == null ? "" : newValue);
         String oldMediaType = getMediaTypeString(oldValue);
         String newMediaType = getMediaTypeString(newValue);
-        if(Utils.areStringsEqual(oldMediaType, newMediaType, true, true)) notifyPropertyChanged(MEDIA_TYPE, oldMediaType, newMediaType);
+        if (Utils.areStringsEqual(oldMediaType, newMediaType, true, true)) notifyPropertyChanged(MEDIA_TYPE, oldMediaType, newMediaType);
     }
 
     @Override
     public void setMediaType(String mediaType) {
-        if(StringUtils.isNullOrEmpty(mediaType)) return;
+        if (StringUtils.isNullOrEmpty(mediaType)) return;
         int number = MediaTypeRegistry.parse(mediaType);
-        if(number == MediaTypeRegistry.UNDEFINED) return;
+        if (number == MediaTypeRegistry.UNDEFINED) return;
         setContentFormatOption(OptionsSupport.encodeIntOptionValue(number, 2));
     }
 
-    public String getContentFormatOption(){
+    public String getContentFormatOption() {
         XmlObject[] mediaTypeSections = getConfig().selectPath(String.format("$this/%s[@%s=%d]", OPTION_SECTION, OPTION_NUMBER_ATTR, OptionNumberRegistry.CONTENT_FORMAT));
-        if(mediaTypeSections == null || mediaTypeSections.length == 0) return null;
-        if(mediaTypeSections.length != 1){
+        if (mediaTypeSections == null || mediaTypeSections.length == 0) return null;
+        if (mediaTypeSections.length != 1) {
             SoapUI.log(String.format("Incorrect data (duplicated Content-Format option) in the %s test step", getName()));
         }
         return readOptionValue(mediaTypeSections[0]);
     }
 
-    public void setContentFormatOption(String value){
+    public void setContentFormatOption(String value) {
         String oldValue = getContentFormatOption();
-        if(Utils.areStringsEqual(oldValue, value, true, false)) return;
+        if (Utils.areStringsEqual(oldValue, value, true, false)) return;
         int count = getOptionCount();
-        for(int i = 0; i < count; ++i){
-            if(getOptionNumber(i) == OptionNumberRegistry.CONTENT_FORMAT){
-                if(value == null) removeOption(i); else setOption(i, value);
+        for (int i = 0; i < count; ++i) {
+            if (getOptionNumber(i) == OptionNumberRegistry.CONTENT_FORMAT) {
+                if (value == null) removeOption(i); else setOption(i, value);
                 notifyPropertyChanged(CONTENT_FORMAT_OPTION_BEAN_PROP, oldValue, value);
                 return;
             }
@@ -354,27 +362,48 @@ public class CoapRequest extends HttpTestRequest implements CoapOptionsDataSourc
         notifyPropertyChanged(CONTENT_FORMAT_OPTION_BEAN_PROP, oldValue, value);
     }
 
-    public void addOptionsListener(CoapOptionsListener listener){
-        if(optionsListeners == null) optionsListeners = new ArrayList<>();
+    public void addOptionsListener(CoapOptionsListener listener) {
+        if (optionsListeners == null) optionsListeners = new ArrayList<>();
         optionsListeners.add(listener);
     }
 
-    public void removeOptionsListener(CoapOptionsListener listener){
-        if(optionsListeners == null) return;
+    public void removeOptionsListener(CoapOptionsListener listener) {
+        if (optionsListeners == null) return;
         optionsListeners.remove(listener);
     }
 
-    public String getResponseEtag(){
-        CoapResp response = (CoapResp)getResponse();
-        if(response == null) return null;
+    public void setResponse(HttpResponse response, SubmitContext context) {
+        String oldEtag = getResponseEtag();
+        String oldResponseLocation = getResponseLocation();
+        super.setResponse(response, context);
+        String newETag = getResponseEtag();
+        String newResponseLocation = getResponseLocation();
+        if(!Utils.areStringsEqual(oldEtag,  newETag, true, true)) notifyPropertyChanged(RESPONSE_ETAG_BEAN_PROP, oldEtag, newETag);
+        if(!Utils.areStringsEqual(oldResponseLocation, newResponseLocation, false, true)) notifyPropertyChanged(RESPONSE_LOCATION_BEAN_PROP, oldResponseLocation, newResponseLocation);
+    }
+
+    public String getResponseEtag() {
+        CoapResp response = (CoapResp) getResponse();
+        if (response == null) return null;
+        if(response.getResponseMessage() == null) return null;
         List<byte[]> etags = response.getResponseMessage().getOptions().getETags();
-        if(etags == null || etags.size() == 0) return null;
+        if (etags == null || etags.size() == 0) return null;
         String result = "";
-        for(byte[] etag: etags){
+        for (byte[] etag : etags) {
             String s = Utils.bytesToHexString(etag);
-            if(s != null) result += s;
+            if (s != null) result += ("0x" + s);
             result += ";";
         }
         return result.substring(0, result.length() - 1);
     }
+
+    public String getResponseLocation(){
+        CoapResp response = (CoapResp) getResponse();
+        if (response == null) return null;
+        if(response.getResponseMessage() == null) return null;
+        return response.getResponseMessage().getOptions().getLocationString();
+
+    }
+
+
 }
