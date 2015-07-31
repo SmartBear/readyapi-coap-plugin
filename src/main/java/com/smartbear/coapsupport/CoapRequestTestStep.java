@@ -67,11 +67,6 @@ public class CoapRequestTestStep extends HttpTestRequestStep {
         return new CoapRequest(this, (HttpRequestConfig)getConfig().getConfig(), forLoadTest);
     }
 
-    @Override
-    public TestStepResult run(TestCaseRunner testRunner, TestCaseRunContext testRunContext) {
-        return new WsdlTestStepResult(this);
-    }
-
     public CoapRequest getRequest(){return (CoapRequest)getTestRequest();}
 
     private static TestStepConfig correctTestStepData(TestStepConfig testStepData){
