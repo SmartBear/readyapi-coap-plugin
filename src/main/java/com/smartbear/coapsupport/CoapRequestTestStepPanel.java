@@ -398,9 +398,12 @@ public class CoapRequestTestStepPanel extends AbstractHttpXmlRequestDesktopPanel
 
     }
 
-    class CoapResponseEditor extends AbstractHttpRequestDesktopPanel.AbstractHttpResponseMessageEditor{
+    class CoapResponseEditor extends HttpResponseMessageEditor { //AbstractHttpRequestDesktopPanel.AbstractHttpResponseMessageEditor{
+//        public CoapResponseEditor(CoapRequest request) {
+//            super(new CoapResponseDocument(request));
+//        }
         public CoapResponseEditor(CoapRequest request) {
-            super(new CoapResponseDocument(request));
+            super(request);
         }
 
         @Override

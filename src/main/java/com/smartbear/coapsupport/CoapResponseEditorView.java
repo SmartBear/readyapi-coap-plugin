@@ -1,5 +1,6 @@
 package com.smartbear.coapsupport;
 
+import com.eviware.soapui.impl.support.panels.AbstractHttpXmlRequestDesktopPanel;
 import com.eviware.soapui.support.editor.views.xml.raw.RawXmlEditor;
 import com.eviware.soapui.support.editor.xml.XmlDocument;
 import org.eclipse.californium.core.coap.Response;
@@ -23,7 +24,7 @@ import java.awt.Insets;
 import java.util.Arrays;
 
 //@PluginResponseEditorView(viewId = "CoAP Message", targetClass = CoapRequest.class)
-public class CoapResponseEditorView extends AbstractXmlEditorView<CoapResponseDocument> {
+public class CoapResponseEditorView extends AbstractXmlEditorView<AbstractHttpXmlRequestDesktopPanel.HttpResponseDocument> {
 
 
     private JTextArea memo;
@@ -36,7 +37,7 @@ public class CoapResponseEditorView extends AbstractXmlEditorView<CoapResponseDo
 
 
     public CoapResponseEditorView(Editor<?> editor, CoapRequest request, String viewId, RawXmlEditor<XmlDocument> innerRawView) {
-        super("Response", (XmlEditor<CoapResponseDocument>)editor, viewId);
+        super("Response", (XmlEditor<AbstractHttpXmlRequestDesktopPanel.HttpResponseDocument>)editor, viewId);
         this.innerRawView = innerRawView;
     }
 
@@ -52,7 +53,7 @@ public class CoapResponseEditorView extends AbstractXmlEditorView<CoapResponseDo
     }
 
     @Override
-    public void setDocument(CoapResponseDocument xmlDocument) {
+    public void setDocument(AbstractHttpXmlRequestDesktopPanel.HttpResponseDocument xmlDocument) {
         super.setDocument(xmlDocument);
         innerRawView.setDocument(xmlDocument);
     }
@@ -109,6 +110,7 @@ public class CoapResponseEditorView extends AbstractXmlEditorView<CoapResponseDo
     public void documentUpdated(){
         if(component != null){
             updateView();
+            innerRawView.documentUpdated();
         }
     }
 
@@ -116,8 +118,15 @@ public class CoapResponseEditorView extends AbstractXmlEditorView<CoapResponseDo
         Response message = null;
         CoapResp resp = null;
         if(getDocument() != null){
-            message = getDocument().getResponseMessage();
-            resp = getDocument().getResponse();
+            if(getDocument().getRequest() != null){
+                if(getDocument().getRequest().getResponse() != null){
+                    resp = (CoapResp)getDocument().getRequest().getResponse();
+                    if(resp != null) message = resp.getResponseMessage();
+                }
+
+            }
+//            message = getDocument().getResponseMessage();
+//            resp = getDocument().getResponse();
         }
         if(message == null || resp == null) {
             responseCodeLabel.setText("");
