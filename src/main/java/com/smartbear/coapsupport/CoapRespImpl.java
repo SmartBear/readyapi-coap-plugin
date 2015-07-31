@@ -1,5 +1,6 @@
 package com.smartbear.coapsupport;
 
+import com.eviware.soapui.SoapUI;
 import org.eclipse.californium.core.coap.MediaTypeRegistry;
 import org.eclipse.californium.core.coap.Response;
 import com.eviware.soapui.impl.rest.support.MediaTypeHandler;
@@ -13,7 +14,11 @@ import com.eviware.soapui.support.types.StringToStringMap;
 import com.eviware.soapui.support.types.StringToStringsMap;
 import com.google.common.base.Charsets;
 
+import java.io.IOException;
+import java.net.MalformedURLException;
 import java.net.URL;
+import java.net.URLConnection;
+import java.net.URLStreamHandler;
 
 public class CoapRespImpl implements CoapResp {
     private StringToStringMap properties = new StringToStringMap();
@@ -25,10 +30,12 @@ public class CoapRespImpl implements CoapResp {
     private String responseContentType;
     private String xmlContent;
     private Response response;
+    private static CoapUrlStreamHandler urlHandler;
 
 
 
     public CoapRespImpl(CoapRequest request, Response response, long takenTime) {
+        if(urlHandler == null) urlHandler = new CoapUrlStreamHandler();
         this.request = request;
         this.takenTime = takenTime;
         this.response = response;
@@ -71,7 +78,13 @@ public class CoapRespImpl implements CoapResp {
 
     @Override
     public URL getURL() {
-        return null;
+        try {
+            return new URL(null, getRequest().getEndpoint(), urlHandler);
+        } catch (MalformedURLException e) {
+            SoapUI.logError(e);
+            return null;
+        }
+
     }
 
     @Override
@@ -178,4 +191,24 @@ public class CoapRespImpl implements CoapResp {
     public Response getResponseMessage(){
         return response;
     }
+
+    public static class CoapUrlStreamHandler extends URLStreamHandler {
+        @Override
+        protected URLConnection openConnection(URL u) throws IOException {
+            return new CoapUrlConnection(u);
+        }
+    }
+    public static class CoapUrlConnection extends URLConnection{
+
+        protected CoapUrlConnection(URL url) {
+            super(url);
+        }
+
+        @Override
+        public void connect() throws IOException {
+
+        }
+    }
+
+
 }
