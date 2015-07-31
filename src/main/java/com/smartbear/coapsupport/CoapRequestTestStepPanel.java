@@ -40,6 +40,7 @@ import com.eviware.soapui.support.editor.views.xml.raw.RawXmlEditor;
 import com.eviware.soapui.support.editor.views.xml.raw.RawXmlEditorFactory;
 import com.eviware.soapui.support.editor.xml.XmlDocument;
 import com.eviware.soapui.support.log.JLogList;
+import com.eviware.soapui.support.propertyexpansion.PropertyExpansionPopupListener;
 import com.eviware.soapui.ui.desktop.DesktopPanel;
 import com.eviware.soapui.ui.support.ModelItemDesktopPanel;
 import com.jgoodies.binding.PresentationModel;
@@ -212,6 +213,7 @@ public class CoapRequestTestStepPanel extends AbstractHttpXmlRequestDesktopPanel
         endpointEdit = new JUndoableTextField(50);
         Bindings.bind(endpointEdit, new PropertyAdapter<CoapRequest>(getTestStep().getRequest(), "endpoint"));
         toolbar.addLabeledFixed("Request Endpoint:", endpointEdit);
+        PropertyExpansionPopupListener.enable(endpointEdit, getTestStep().getRequest());
 
         confirmableCheckBox = new JCheckBox("Confirmable Request");
         Bindings.bind(confirmableCheckBox, new PropertyAdapter<CoapRequest>(getTestStep().getRequest(), CoapRequest.CONFIRMABLE_BEAN_PROP));
