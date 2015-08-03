@@ -1,6 +1,7 @@
 package com.smartbear.coapsupport;
 
 import org.eclipse.californium.core.coap.CoAP;
+import org.eclipse.californium.core.coap.MessageObserver;
 import org.eclipse.californium.core.coap.Option;
 import org.eclipse.californium.core.coap.Request;
 import com.eviware.soapui.SoapUI;
@@ -14,6 +15,10 @@ import com.eviware.soapui.model.propertyexpansion.PropertyExpander;
 import com.eviware.soapui.plugins.auto.PluginRequestTransport;
 import com.eviware.soapui.support.StringUtils;
 import com.eviware.soapui.support.types.StringList;
+import org.eclipse.californium.core.network.Endpoint;
+import org.eclipse.californium.core.network.EndpointManager;
+import org.eclipse.californium.core.network.interceptors.MessageInterceptor;
+import org.eclipse.californium.core.network.interceptors.MessageTracer;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,7 +30,6 @@ public class CoapTransport implements RequestTransport {
 
     public final static String REQUEST_CONTEXT_PROP = "CoapRequest";
 
-//    public enum SubmitStatus{InProgress, GotResponse, Rejected, Timeout, Canceled};
     public class CoapSubmitFailureException extends RuntimeException{
         public CoapSubmitFailureException(String msg){
             super(msg);
@@ -37,6 +41,8 @@ public class CoapTransport implements RequestTransport {
     }
 
     private List<RequestFilter> filters = new ArrayList<RequestFilter>();
+    private boolean logExchange = false;
+    private boolean isLoggerEstablished = false;
 
     @Override
     public void abortRequest(SubmitContext submitContext) {
@@ -148,13 +154,19 @@ public class CoapTransport implements RequestTransport {
             message.getOptions().addOption(option);
         }
         context.setProperty(REQUEST_CONTEXT_PROP, message);
-//        context.setProperty(ACKNOWLEDGED_CONTEXT_PROP, false);
-//        context.setProperty(STATUS_CONTEXT_PROP, SubmitStatus.InProgress);
-//        CoapMessageObserver observer = new CoapMessageObserver(message, context);
-//        message.addMessageObserver(observer);
 
         long startTime = System.currentTimeMillis();
-        message.send();
+        if(logExchange){
+            Endpoint clientEndpoint = EndpointManager.getEndpointManager().getDefaultEndpoint();
+            if(!isLoggerEstablished){
+                clientEndpoint.addInterceptor(new MessageTracer());
+                isLoggerEstablished = true;
+            }
+            message.send(clientEndpoint);
+        }
+        else {
+            message.send();
+        }
 
         org.eclipse.californium.core.coap.Response responseMessage = message.waitForResponse(timeout);
 
@@ -203,44 +215,4 @@ public class CoapTransport implements RequestTransport {
             filters.add( ix, filter );
     }
 
-
-//    private class CoapMessageObserver implements MessageObserver {
-//        private SubmitContext context;
-//        private Request request;
-//
-//        public CoapMessageObserver(Request request, SubmitContext context){
-//            this.context = context;
-//            this.request = request;
-//        }
-//
-//        @Override
-//        public void onRetransmission() {
-//
-//        }
-//
-//        @Override
-//        public void onResponse(ch.ethz.inf.vs.californium.coap.Response response) {
-//            context.setProperty(STATUS_CONTEXT_PROP, SubmitStatus.GotResponse);
-//        }
-//
-//        @Override
-//        public void onAcknowledgement() {
-//            context.setProperty(ACKNOWLEDGED_CONTEXT_PROP, true);
-//        }
-//
-//        @Override
-//        public void onReject() {
-//            context.setProperty(STATUS_CONTEXT_PROP, SubmitStatus.Rejected);
-//        }
-//
-//        @Override
-//        public void onTimeout() {
-//            context.setProperty(STATUS_CONTEXT_PROP, SubmitStatus.Timeout);
-//        }
-//
-//        @Override
-//        public void onCancel() {
-//            context.setProperty(STATUS_CONTEXT_PROP, SubmitStatus.Canceled);
-//        }
-//    }
 }
