@@ -42,7 +42,7 @@ public class CoapTransport implements RequestTransport {
     }
 
     private List<RequestFilter> filters = new ArrayList<RequestFilter>();
-    private boolean logExchange = true;
+    private boolean logExchange = false;
     private boolean isLoggerEstablished = false;
 
     @Override

@@ -2,11 +2,13 @@ package com.smartbear.coapsupport;
 
 import com.eviware.soapui.model.ModelItem;
 import com.eviware.soapui.support.propertyexpansion.PropertyExpansionPopupListener;
+import org.eclipse.californium.core.coap.BlockOption;
 import org.eclipse.californium.core.coap.MediaTypeRegistry;
 import org.eclipse.californium.core.coap.Option;
 import org.eclipse.californium.core.coap.OptionNumberRegistry;
 
 import javax.swing.AbstractCellEditor;
+import javax.swing.ComboBoxEditor;
 import javax.swing.JComboBox;
 import javax.swing.JTable;
 import javax.swing.JTextField;
@@ -23,7 +25,7 @@ public class OptionsSupport {
 
     public enum OptionType{Uint, String, Opaque, Empty, Unknown};
 
-    public static int[] editableRequestOptions = {OptionNumberRegistry.ACCEPT, OptionNumberRegistry.CONTENT_FORMAT, OptionNumberRegistry.ETAG, OptionNumberRegistry.IF_MATCH, OptionNumberRegistry.IF_NONE_MATCH, OptionNumberRegistry.SIZE1, OptionNumberRegistry.SIZE2};
+    public static int[] editableRequestOptions = {OptionNumberRegistry.ACCEPT, OptionNumberRegistry.BLOCK2, OptionNumberRegistry.CONTENT_FORMAT, OptionNumberRegistry.ETAG, OptionNumberRegistry.IF_MATCH, OptionNumberRegistry.IF_NONE_MATCH, OptionNumberRegistry.SIZE1, OptionNumberRegistry.SIZE2};
 
     public static String[] getEditableRequestOptionsNames(){
         String[] result = new String[editableRequestOptions.length];
@@ -37,6 +39,8 @@ public class OptionsSupport {
         switch (optionNumber){
             case OptionNumberRegistry.ACCEPT: case OptionNumberRegistry.CONTENT_FORMAT:
                 return MediaTypeOptionRenderer.class;
+            case OptionNumberRegistry.BLOCK1:case OptionNumberRegistry.BLOCK2:
+                return BlockOptionRenderer.class;
             default:
                 if(OptionsSupport.getOptionType(optionNumber) == OptionType.Uint){
                     return UIntOptionRenderer.class;
@@ -53,6 +57,8 @@ public class OptionsSupport {
                 return MediaTypeOptionEditor.class;
             case OptionNumberRegistry.SIZE2:
                 return Size2Editor.class;
+            case OptionNumberRegistry.BLOCK2:
+                return Block2Editor.class;
             default:
                 switch (OptionsSupport.getOptionType(optionNumber)){
                     case Empty:
@@ -167,6 +173,38 @@ public class OptionsSupport {
                 setText(MediaTypeRegistry.toString(intValue.intValue()));
             } else {
                 setText("0x" + Long.toHexString(intValue));
+            }
+        }
+    }
+
+    public static class BlockOptionRenderer extends DefaultTableCellRenderer{
+        @Override
+        protected void setValue(Object value) {
+            String rawValue = (String) value;
+            if(rawValue == null || !rawValue.startsWith("0x")){
+                setText(rawValue);
+            }
+            else {
+                byte[] bin;
+                try{
+                    bin = Utils.hexStringToBytes(rawValue.substring(2));
+                }
+                catch (IllegalArgumentException ignored){
+                    setText(rawValue);
+                    return;
+                }
+                if(bin.length > 3){
+                    setText(rawValue);
+                }
+                else{
+                    BlockOption option = new BlockOption(bin);
+                    if(option.isM()){
+                        setText(String.format("%d+ (%d bytes/block)", option.getNum(), option.getSize()));
+                    }
+                    else{
+                        setText(String.format("%d (%d bytes/block)", option.getNum(), option.getSize()));
+                    }
+                }
             }
         }
     }
@@ -433,6 +471,32 @@ public class OptionsSupport {
         @Override
         public Object getCellEditorValue() {
             return "";
+        }
+    }
+
+    public static class Block2Editor extends AbstractCellEditor implements TableCellEditor{
+        private JComboBox<String> editor;
+
+        public Block2Editor(ModelItem modelItem){
+
+        }
+
+        @Override
+        public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
+            if(editor == null){
+                editor = new JComboBox<>(new String[]{"16 bytes/block", "32 bytes/block", "64 bytes/block", "128 bytes/block", "256 bytes/block", "512 bytes/block", "1024 bytes/block"});
+                editor.setToolTipText("Please choose size of blocks for response");
+            }
+            return editor;
+        }
+
+        @Override
+        public Object getCellEditorValue() {
+            if(editor.getSelectedIndex() < 0) return null;
+            BlockOption option = new BlockOption(editor.getSelectedIndex(), false, 0);
+            byte[] value = option.getValue();
+            if(value == null) value = new byte[0];
+            return "0x" + Utils.bytesToHexString(value);
         }
     }
 
