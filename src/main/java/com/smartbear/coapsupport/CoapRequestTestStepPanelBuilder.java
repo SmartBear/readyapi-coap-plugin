@@ -34,9 +34,10 @@ public class CoapRequestTestStepPanelBuilder extends EmptyPanelBuilder<CoapReque
         table.addProperty("Name", "name", true);
         table.addProperty("Description", "description", true);
         // specific properties
-        table.addProperty("Timeout", "timeout", true);
+        table.addProperty("Auto Size1 Option", CoapRequest.AUTO_SIZE1_BEAN_PROP, JPropertiesTable.BOOLEAN_OPTIONS);
         table.addProperty("Multi-Value Delimiter", "multiValueDelimiter", true);
         table.addProperty("Send Empty Parameters", "sendEmptyParameters", JPropertiesTable.BOOLEAN_OPTIONS);
+        table.addProperty("Timeout", "timeout", true);
         table.setPropertyObject(request);
 
         return table;

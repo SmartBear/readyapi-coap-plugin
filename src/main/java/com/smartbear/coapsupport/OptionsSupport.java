@@ -20,9 +20,10 @@ import java.awt.event.KeyEvent;
 
 
 public class OptionsSupport {
+
     public enum OptionType{Uint, String, Opaque, Empty, Unknown};
 
-    public static int[] editableRequestOptions = {OptionNumberRegistry.ACCEPT, OptionNumberRegistry.CONTENT_FORMAT, OptionNumberRegistry.ETAG, OptionNumberRegistry.IF_MATCH, OptionNumberRegistry.IF_NONE_MATCH};
+    public static int[] editableRequestOptions = {OptionNumberRegistry.ACCEPT, OptionNumberRegistry.CONTENT_FORMAT, OptionNumberRegistry.ETAG, OptionNumberRegistry.IF_MATCH, OptionNumberRegistry.IF_NONE_MATCH, OptionNumberRegistry.SIZE1, OptionNumberRegistry.SIZE2};
 
     public static String[] getEditableRequestOptionsNames(){
         String[] result = new String[editableRequestOptions.length];
@@ -31,7 +32,6 @@ public class OptionsSupport {
         }
         return result;
     }
-
 
     public static Class<? extends TableCellRenderer> getOptionRenderer(int optionNumber){
         switch (optionNumber){
@@ -48,20 +48,22 @@ public class OptionsSupport {
     }
 
     public static Class<? extends TableCellEditor> getOptionEditor(int optionNumber){
-        if(optionNumber == OptionNumberRegistry.ACCEPT || optionNumber == OptionNumberRegistry.CONTENT_FORMAT){
-            return MediaTypeOptionEditor.class;
-        }
-        else{
-            switch (OptionsSupport.getOptionType(optionNumber)){
-                case Empty:
-                    return EmptyOptionEditor.class;
-                case String:
-                    return StringOptionEditor.class;
-                case Uint:
-                    return UIntOptionEditor.class;
-                case Opaque: case Unknown:
-                    return OpaqueOptionEditor.class;
-            }
+        switch (optionNumber){
+            case OptionNumberRegistry.ACCEPT:case OptionNumberRegistry.CONTENT_FORMAT:
+                return MediaTypeOptionEditor.class;
+            case OptionNumberRegistry.SIZE2:
+                return Size2Editor.class;
+            default:
+                switch (OptionsSupport.getOptionType(optionNumber)){
+                    case Empty:
+                        return EmptyOptionEditor.class;
+                    case String:
+                        return StringOptionEditor.class;
+                    case Uint:
+                        return UIntOptionEditor.class;
+                    case Opaque: case Unknown:
+                        return OpaqueOptionEditor.class;
+                }
         }
         return null;
     }
@@ -95,6 +97,11 @@ public class OptionsSupport {
         if(result < 0) return null;
         if(result >= (1L << (maxByteCount * 8))) return null;
         return result;
+    }
+
+    public static boolean isOptionRepeatable(int optionNumber) {
+        if(optionNumber == OptionNumberRegistry.SIZE1 || optionNumber == OptionNumberRegistry.SIZE2) return false;
+        return !OptionNumberRegistry.isSingleValue(optionNumber);
     }
 
     //returns null on error
@@ -395,7 +402,30 @@ public class OptionsSupport {
             if(editor == null){
                 editor = new JTextField(20);
                 editor.setEnabled(false);
+                editor.setText("<Must have no value>");
                 editor.setToolTipText("This option must have empty value.");
+            }
+            return editor;
+        }
+
+        @Override
+        public Object getCellEditorValue() {
+            return "";
+        }
+    }
+
+    public static class Size2Editor extends AbstractCellEditor implements TableCellEditor{
+        private JTextField editor;
+        public Size2Editor(ModelItem modelItem){
+        }
+
+        @Override
+        public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
+            if(editor == null){
+                editor = new JTextField(20);
+                editor.setEnabled(false);
+                editor.setText("0 <Only zero is allowed>");
+                editor.setToolTipText("This option must have zero value for a request.");
             }
             return editor;
         }

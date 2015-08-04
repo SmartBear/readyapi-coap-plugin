@@ -176,7 +176,7 @@ public class OptionsPane extends JPanel {
                     public ValidationMessage[] validateField(XFormField formField) {
                         int optionNumber = getOptionNumber(combo);
                         if(optionNumber <= 0) return new ValidationMessage[]{new ValidationMessage("Please type a valid positive decimal or hexadecimal number (starting from 0x) or choose an option from the list.", combo)};
-                        if(OptionNumberRegistry.isSingleValue(optionNumber) && hasOption(optionNumber)) return new ValidationMessage[]{new ValidationMessage("Unable to add this option because it is already specified and it does not allow multiple values", combo)};
+                        if(!OptionsSupport.isOptionRepeatable(optionNumber) && hasOption(optionNumber)) return new ValidationMessage[]{new ValidationMessage("Unable to add this option because it is already specified and it does not allow multiple values", combo)};
                         if(editor != null){
                             String value = (String)editor.getCellEditorValue();
                             if(value == null) return new ValidationMessage[]{new ValidationMessage("Please input a valid option value", valueField)};

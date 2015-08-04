@@ -29,10 +29,12 @@ public class CoapRequest extends HttpTestRequest implements CoapOptionsDataSourc
     private static final String OPTION_NUMBER_ATTR = "Number";
     private static final String OPTION_VALUE_ATTR = "Value";
     private static final String CONFIRMABLE_ATTR = "confirmable";
+    private static final String AUTO_SIZE1_ATTR = "autoSize1";
     public static final String CONTENT_FORMAT_OPTION_BEAN_PROP = "contentFormatOption";
     public static final String CONFIRMABLE_BEAN_PROP = "confirmable";
     public static final String RESPONSE_ETAG_BEAN_PROP = "responseEtag";
     public static final String RESPONSE_LOCATION_BEAN_PROP = "responseLocation";
+    public static final String AUTO_SIZE1_BEAN_PROP = "autoSize1";
 
     private CoapRequestTestStep testStep;
     private ImageIcon validRequestIcon;
@@ -103,6 +105,22 @@ public class CoapRequest extends HttpTestRequest implements CoapOptionsDataSourc
         }
     }
 
+    public boolean getAutoSize1(){
+        Element element = (Element) getConfig().getDomNode();
+        String rawValue = element.getAttributeNS(null, AUTO_SIZE1_ATTR);
+        if (StringUtils.isNullOrEmpty(rawValue)) return false;
+        return Boolean.valueOf(rawValue);
+    }
+
+    public void setAutoSize1(boolean newValue){
+        boolean oldValue = getAutoSize1();
+        if (newValue != oldValue) {
+            Element element = (Element) getConfig().getDomNode();
+            element.setAttributeNS(null, AUTO_SIZE1_ATTR, Boolean.toString(newValue));
+            notifyPropertyChanged(AUTO_SIZE1_BEAN_PROP, oldValue, newValue);
+        }
+    }
+
     public ModelItem getParent() {
         return testStep;
     }
@@ -117,7 +135,7 @@ public class CoapRequest extends HttpTestRequest implements CoapOptionsDataSourc
         }
         String newContentFormat = getContentFormatOption();
         if (Utils.areStringsEqual(oldContentFormat, newContentFormat, true, false)) {
-            notifyPropertyChanged(CONTENT_FORMAT_OPTION_BEAN_PROP, oldContentFormat, newContentFormat);
+            contentFomatChanged(oldContentFormat, newContentFormat);
         }
     }
 
@@ -167,19 +185,6 @@ public class CoapRequest extends HttpTestRequest implements CoapOptionsDataSourc
         return readOptionValue((Element) optionSection.getDomNode());
     }
 
-//        byte[] value = null;
-//        if(StringUtils.hasContent(optionValueStr)){
-//            try {
-//                value = Utils.hexStringToBytes(optionValueStr);
-//            }
-//            catch (IllegalArgumentException e){
-//                SoapUI.logError(e, String.format("Incorrect data (\"%s\") in the %s test step", optionValueStr, getName()));
-//                return new OptionEx();
-//            }
-//        }
-//        return new OptionEx(optionNumber, value);
-//    }
-
     private Element getOptionSection(int optionIndex) {
         String path = String.format("$this/%s[%d]", OPTION_SECTION, optionIndex + 1);
         XmlObject[] pathResult = getConfig().selectPath(path);
@@ -220,7 +225,7 @@ public class CoapRequest extends HttpTestRequest implements CoapOptionsDataSourc
             }
         }
         if (optionNumber == OptionNumberRegistry.CONTENT_FORMAT) {
-            notifyPropertyChanged(CONTENT_FORMAT_OPTION_BEAN_PROP, oldOptionValue, optionValue == null ? "" : optionValue);
+            contentFomatChanged(oldOptionValue, optionValue == null ? "" : optionValue);
         }
     }
 
@@ -252,7 +257,7 @@ public class CoapRequest extends HttpTestRequest implements CoapOptionsDataSourc
             }
         }
         if (optionNumber == OptionNumberRegistry.CONTENT_FORMAT) {
-            notifyPropertyChanged(CONTENT_FORMAT_OPTION_BEAN_PROP, null, optionValue == null ? "" : optionValue);
+            contentFomatChanged(null, optionValue == null ? "" : optionValue);
         }
         return pos;
     }
@@ -269,7 +274,7 @@ public class CoapRequest extends HttpTestRequest implements CoapOptionsDataSourc
             }
         }
         if (oldOptionNumber == OptionNumberRegistry.CONTENT_FORMAT) {
-            notifyPropertyChanged(CONTENT_FORMAT_OPTION_BEAN_PROP, oldOption, null);
+            contentFomatChanged(oldOption, null);
         }
     }
 
@@ -318,13 +323,18 @@ public class CoapRequest extends HttpTestRequest implements CoapOptionsDataSourc
 
     }
 
+    public Integer getContentFormatAsNumber(){
+        Long mediaType = OptionsSupport.decodeIntOptionValue(getContentFormatOption(), 2);
+        if(mediaType == null) return null; else return mediaType.intValue();
+    }
+
     @Override
     public String getMediaType() {
         return getMediaTypeString(getContentFormatOption());
     }
 
-    private void contenfFomatChanged(String oldValue, String newValue) {
-        notifyPropertyChanged(CONTENT_FORMAT_OPTION_BEAN_PROP, oldValue == null ? "" : oldValue, newValue == null ? "" : newValue);
+    private void contentFomatChanged(String oldValue, String newValue) {
+        notifyPropertyChanged(CONTENT_FORMAT_OPTION_BEAN_PROP, oldValue, newValue);
         String oldMediaType = getMediaTypeString(oldValue);
         String newMediaType = getMediaTypeString(newValue);
         if (Utils.areStringsEqual(oldMediaType, newMediaType, true, true)) notifyPropertyChanged(MEDIA_TYPE, oldMediaType, newMediaType);
@@ -354,6 +364,7 @@ public class CoapRequest extends HttpTestRequest implements CoapOptionsDataSourc
         for (int i = 0; i < count; ++i) {
             if (getOptionNumber(i) == OptionNumberRegistry.CONTENT_FORMAT) {
                 if (value == null) removeOption(i); else setOption(i, value);
+
                 notifyPropertyChanged(CONTENT_FORMAT_OPTION_BEAN_PROP, oldValue, value);
                 return;
             }

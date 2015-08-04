@@ -1,7 +1,7 @@
 package com.smartbear.coapsupport;
 
 import org.eclipse.californium.core.coap.CoAP;
-import org.eclipse.californium.core.coap.MessageObserver;
+import org.eclipse.californium.core.coap.MediaTypeRegistry;
 import org.eclipse.californium.core.coap.Option;
 import org.eclipse.californium.core.coap.Request;
 import com.eviware.soapui.SoapUI;
@@ -29,6 +29,7 @@ import static com.eviware.soapui.impl.support.HttpUtils.urlEncodeWithUtf8;
 public class CoapTransport implements RequestTransport {
 
     public final static String REQUEST_CONTEXT_PROP = "CoapRequest";
+    public final static String RESPONSE_CONTEXT_PROP = "CoapResponse";
 
     public class CoapSubmitFailureException extends RuntimeException{
         public CoapSubmitFailureException(String msg){
@@ -41,7 +42,7 @@ public class CoapTransport implements RequestTransport {
     }
 
     private List<RequestFilter> filters = new ArrayList<RequestFilter>();
-    private boolean logExchange = false;
+    private boolean logExchange = true;
     private boolean isLoggerEstablished = false;
 
     @Override
@@ -73,8 +74,6 @@ public class CoapTransport implements RequestTransport {
     @Override
     public Response sendRequest(SubmitContext context, com.eviware.soapui.model.iface.Request req) throws Exception {
         CoapRequest request = (CoapRequest)req;
-
-        filterRequest(context, request);
 
         String endpoint = request.getEndpoint();
         endpoint = PropertyExpander.expandProperties(context, endpoint);
@@ -153,7 +152,52 @@ public class CoapTransport implements RequestTransport {
             }
             message.getOptions().addOption(option);
         }
+
+        if(request.hasRequestBody()) {
+            String requestContent = PropertyExpander.expandProperties(context, request.getRequestContent());
+            if(requestContent != null && requestContent.length() != 0) {
+                if (StringUtils.isNullOrEmpty(request.getMediaType())) {
+                    if (requestContent.startsWith("0x0x")) {
+                        message.setPayload(requestContent.substring(2));
+                    }
+                    else if (requestContent.trim().startsWith("0x")) {
+                        byte[] bin;
+                        try{
+                            bin = Utils.hexStringToBytes(requestContent.trim().substring(2));
+                        } catch (IllegalArgumentException e) {
+                            throw new IllegalArgumentException(String.format("\"%s\" string could not be interpreted as a binary request content", Utils.limitStringLen(requestContent, 50)));
+                        }
+                        message.setPayload(bin);
+                    }
+                    else {
+                        message.setPayload(requestContent);
+                    }
+                }
+                else{
+                    Integer mediaTypeNumber = request.getContentFormatAsNumber();
+                    if(MediaTypeRegistry.isPrintable(mediaTypeNumber)){
+                        message.setPayload(requestContent);
+                    }
+                    else{
+                        requestContent = requestContent.trim();
+                        if(requestContent.startsWith("0x")) requestContent = requestContent.substring(2);
+                        byte[] bin;
+                        try{
+                            bin = Utils.hexStringToBytes(requestContent);
+                        } catch (IllegalArgumentException e) {
+                            throw new IllegalArgumentException(String.format("\"%s\" string could not be interpreted as a binary request content", Utils.limitStringLen(requestContent, 50)));
+                        }
+                        message.setPayload(bin);
+                    }
+                }
+            }
+        }
+
         context.setProperty(REQUEST_CONTEXT_PROP, message);
+        filterRequest(context, request);
+        if(request.getAutoSize1()){
+            message.getOptions().setSize1(message.getPayloadSize());
+        }
 
         long startTime = System.currentTimeMillis();
         if(logExchange){
@@ -169,6 +213,9 @@ public class CoapTransport implements RequestTransport {
         }
 
         org.eclipse.californium.core.coap.Response responseMessage = message.waitForResponse(timeout);
+
+        context.setProperty(RESPONSE_CONTEXT_PROP, responseMessage);
+        filterResponse(context, request);
 
         if(message.isCanceled()) throw new CoapSubmitFailureException("Request was canceled.");
         long takenTime = System.currentTimeMillis() - startTime;
@@ -187,6 +234,17 @@ public class CoapTransport implements RequestTransport {
             }
         }
     }
+
+    private void filterResponse(SubmitContext submitContext, CoapRequest coapRequest) {
+        for (RequestFilter filter : filters) {
+            try {
+                filter.afterRequest(submitContext, coapRequest);
+            } catch (Throwable e) {
+                SoapUI.logError(e, "Error while filtering CoAP response " + coapRequest);
+            }
+        }
+    }
+
 
     @Override
     public void addRequestFilter(RequestFilter filter) {
