@@ -172,7 +172,7 @@ public class OptionsSupport {
             if (MediaTypeRegistry.getAllMediaTypes().contains(intValue.intValue())) {
                 setText(MediaTypeRegistry.toString(intValue.intValue()));
             } else {
-                setText("0x" + Long.toHexString(intValue));
+                setText(Long.toString(intValue));
             }
         }
     }
@@ -269,7 +269,7 @@ public class OptionsSupport {
                         setSelectedItem(MediaTypeRegistry.toString(mediaType));
                     }
                     else {
-                        setSelectedItem("0x" + Integer.toString(mediaType, 16));
+                        setSelectedItem(Integer.toString(mediaType));
                     }
                 }
             }
@@ -285,8 +285,12 @@ public class OptionsSupport {
             String curText = (String) getEditor().getItem();
             String goodValue = encodeIntOptionValue(curText, 2);
             if (goodValue != null) return goodValue;
-            if (curText != null && (curText.startsWith("0x") || curText.startsWith("0X"))) return "0x" + curText;
-            else return curText;
+            if (curText != null && (curText.startsWith("0x") || curText.startsWith("0X"))) {
+                return "0x" + curText;
+            }
+            else{
+                return curText;
+            }
         }
 
         private boolean isEditedValueValid() {
