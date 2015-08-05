@@ -163,6 +163,7 @@ public class CoapRequestEditorView extends AbstractXmlEditorView<AbstractHttpXml
     }
 
     public void propertyChange(PropertyChangeEvent evt) {
+        if(component == null) return; //workaround on the bug in RAPI earlier than 1.4
         if (evt.getPropertyName().equals(AbstractHttpRequest.REQUEST_PROPERTY) && !updatingRequest) {
             updatingRequest = true;
             String requestBodyAsXml = (String) evt.getNewValue();
