@@ -14,11 +14,25 @@ import org.eclipse.californium.core.network.config.NetworkConfig;
 public class PluginConfig extends PluginAdapter {
 
     final static String COAP_LOG = "coap.log";
+    private boolean shouldLoad;
 
 
     public PluginConfig(){
         super();
+        try{
+            Class.forName("com.smartbear.ready.ui.ReadyApiMain");
+            shouldLoad = true;
+        }
+        catch (Throwable e){
+            shouldLoad = false;
+        }
         UISupport.addResourceClassLoader(getClass().getClassLoader());
+    }
+
+
+    @Override
+    public boolean isActive() {
+        return super.isActive() && shouldLoad;
     }
 
     @Override
@@ -26,7 +40,14 @@ public class PluginConfig extends PluginAdapter {
         super.initialize();
         SoapUI.getActionRegistry().addActionGroup(new CoapRequestTestStepActionGroup());
         NetworkConfig.createStandardWithoutFile();
-        RequestTransportRegistry.addTransport("coap", new CoapTransport());
+        try {
+            if (RequestTransportRegistry.getTransport("coap") == null) {
+                RequestTransportRegistry.addTransport("coap", new CoapTransport());
+            }
+        }
+        catch(RequestTransportRegistry.MissingTransportException e){
+            RequestTransportRegistry.addTransport("coap", new CoapTransport());
+        }
     }
 
 }
