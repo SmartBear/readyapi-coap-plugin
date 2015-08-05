@@ -1,5 +1,6 @@
 package com.smartbear.coapsupport;
 
+import com.eviware.soapui.support.log.Log4JMonitor;
 import org.eclipse.californium.core.coap.CoAP;
 import org.eclipse.californium.core.coap.MediaTypeRegistry;
 import org.eclipse.californium.core.coap.Option;
@@ -22,6 +23,7 @@ import org.eclipse.californium.core.network.interceptors.MessageTracer;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Logger;
 
 import static com.eviware.soapui.impl.support.HttpUtils.urlEncodeWithUtf8;
 
@@ -30,6 +32,7 @@ public class CoapTransport implements RequestTransport {
 
     public final static String REQUEST_CONTEXT_PROP = "CoapRequest";
     public final static String RESPONSE_CONTEXT_PROP = "CoapResponse";
+    private static final boolean logExchange = true;
 
     public class CoapSubmitFailureException extends RuntimeException{
         public CoapSubmitFailureException(String msg){
@@ -42,8 +45,10 @@ public class CoapTransport implements RequestTransport {
     }
 
     private List<RequestFilter> filters = new ArrayList<RequestFilter>();
-    private boolean logExchange = false;
+    private final org.apache.log4j.Logger logger = org.apache.log4j.Logger.getLogger(PluginConfig.COAP_LOG);
+
     private boolean isLoggerEstablished = false;
+    private boolean isLogTabCreated = false;
 
     @Override
     public void abortRequest(SubmitContext submitContext) {
@@ -201,9 +206,18 @@ public class CoapTransport implements RequestTransport {
 
         long startTime = System.currentTimeMillis();
         if(logExchange){
+            if(!isLogTabCreated){
+                Log4JMonitor logMonitor = SoapUI.getLogMonitor();
+                if(logMonitor != null) {
+                    logMonitor.addLogArea("CoAP", PluginConfig.COAP_LOG, false);
+                    isLogTabCreated = true;
+                }
+            }
+
             Endpoint clientEndpoint = EndpointManager.getEndpointManager().getDefaultEndpoint();
             if(!isLoggerEstablished){
-                clientEndpoint.addInterceptor(new MessageTracer());
+
+                clientEndpoint.addInterceptor(new CoapTracer(logger));
                 isLoggerEstablished = true;
             }
             message.send(clientEndpoint);

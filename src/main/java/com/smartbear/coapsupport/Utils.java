@@ -54,10 +54,10 @@ public class Utils {
     public static String limitStringLen(String s, int maxLength){
         if(s == null) return null;
         int newLen = s.length();
-        if(s.length() > maxLength) newLen = maxLength - 3; else newLen = maxLength;
+        if(newLen > maxLength) newLen = maxLength - 3;
         int pos = s.indexOf("\n");
-        if(pos != -1 && pos < newLen) newLen = pos;
-        if(newLen == maxLength) return s; else return s.substring(0, newLen) + "...";
+        if(pos != -1 && pos < newLen) newLen = Math.min(pos, maxLength - 3);
+        if(newLen == s.length()) return s; else return s.substring(0, newLen) + "...";
     }
 
     public static String responseCodeToText(int code){

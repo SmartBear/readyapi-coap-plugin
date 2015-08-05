@@ -12,6 +12,9 @@ import com.smartbear.coapsupport.CoapRequestTestStepActionGroup;
         infoUrl = "")
 public class PluginConfig extends PluginAdapter {
 
+    final static String COAP_LOG = "coap.log";
+
+
     public PluginConfig(){
         super();
         UISupport.addResourceClassLoader(getClass().getClassLoader());
