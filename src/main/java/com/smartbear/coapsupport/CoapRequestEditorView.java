@@ -46,7 +46,7 @@ public class CoapRequestEditorView extends AbstractXmlEditorView<AbstractHttpXml
     private OptionsPane optionsEditor;
 
     public CoapRequestEditorView(Editor<?> editor, CoapRequest request) {
-        super("Request", (CoapRequestTestStepPanel.CoapRequestEditor) editor, VIEW_ID);
+        super("CoAP", (CoapRequestTestStepPanel.CoapRequestEditor) editor, VIEW_ID);
         this.request = request;
         this.request.addPropertyChangeListener(this);
     }
@@ -68,12 +68,12 @@ public class CoapRequestEditorView extends AbstractXmlEditorView<AbstractHttpXml
             optionsEditor = new OptionsPane(request);
             optionsEditor.setData(request);
             optionsEditor.setEditable(true);
-            final Expander optionsExpander = new Expander("Options", optionsEditor, false, 200, 250);
+            final Expander optionsExpander = new Expander("Request Options", optionsEditor, false, 200, 250);
             mainPanel.add(optionsExpander, new GridBagConstraints(0, 1, 1, 1, 0, 0, GridBagConstraints.NORTHWEST, GridBagConstraints.HORIZONTAL, getDefInsets(), 0, 0));
 
 
             JPanel bodyPanel = buildBodyPanel();
-            bodyExpander = new Expander("Payload", bodyPanel, true, 200, 400);
+            bodyExpander = new Expander("Request Payload", bodyPanel, true, 200, 400);
             mainPanel.add(bodyExpander, new GridBagConstraints(0, 2, 1, 1, 0, 0, GridBagConstraints.NORTHWEST, GridBagConstraints.HORIZONTAL, getDefInsets(), 0, 0));
             bodyExpander.setVisible(request.hasRequestBody());
 

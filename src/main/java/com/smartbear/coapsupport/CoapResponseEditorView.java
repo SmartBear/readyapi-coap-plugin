@@ -37,7 +37,7 @@ public class CoapResponseEditorView extends AbstractXmlEditorView<AbstractHttpXm
 
 
     public CoapResponseEditorView(Editor<?> editor, CoapRequest request, String viewId, RawXmlEditor<XmlDocument> innerRawView) {
-        super("Response", (XmlEditor<AbstractHttpXmlRequestDesktopPanel.HttpResponseDocument>)editor, viewId);
+        super("CoAP", (XmlEditor<AbstractHttpXmlRequestDesktopPanel.HttpResponseDocument>)editor, viewId);
         this.innerRawView = innerRawView;
     }
 
