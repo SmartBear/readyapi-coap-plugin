@@ -19,13 +19,14 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLConnection;
 import java.net.URLStreamHandler;
+import java.nio.charset.Charset;
 
 public class CoapRespImpl implements CoapResp {
     private StringToStringMap properties = new StringToStringMap();
     private CoapRequest request;
     private long takenTime;
     private int statusCode;
-    //private byte[] responsePayload;
+    private byte[] requestBody;
     private String responsePayloadString;
     private String responseContentType;
     private String xmlContent;
@@ -34,7 +35,7 @@ public class CoapRespImpl implements CoapResp {
 
 
 
-    public CoapRespImpl(CoapRequest request, Response response, long takenTime) {
+    public CoapRespImpl(CoapRequest request, byte[] requestBody, Response response, long takenTime) {
         if(urlHandler == null) urlHandler = new CoapUrlStreamHandler();
         this.request = request;
         this.takenTime = takenTime;
@@ -51,8 +52,7 @@ public class CoapRespImpl implements CoapResp {
             }
             responseContentType = MediaTypeRegistry.toString(response.getOptions().getContentFormat());
         }
-//        this.responseContent = responseContent;
-//        this.responseContentType = responseContentType;
+        this.requestBody = requestBody;
     }
 
 
@@ -104,7 +104,7 @@ public class CoapRespImpl implements CoapResp {
 
     @Override
     public String getRequestContent() {
-        return request.getRequestContent();
+        return requestBody == null ? "" : new String(requestBody, java.nio.charset.Charset.forName("UTF-8"));
     }
 
     @Override
@@ -139,7 +139,7 @@ public class CoapRespImpl implements CoapResp {
 
     @Override
     public byte[] getRawRequestData() {
-        return request.getRequestContent() == null ? null : request.getRequestContent().getBytes();
+        return requestBody;
     }
 
     @Override

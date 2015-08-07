@@ -21,6 +21,7 @@ import org.eclipse.californium.core.network.EndpointManager;
 import org.eclipse.californium.core.network.interceptors.MessageInterceptor;
 import org.eclipse.californium.core.network.interceptors.MessageTracer;
 
+import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
@@ -158,44 +159,42 @@ public class CoapTransport implements RequestTransport {
             message.getOptions().addOption(option);
         }
 
+        byte[] actualRequestPayload = null;
         if(request.hasRequestBody()) {
             String requestContent = PropertyExpander.expandProperties(context, request.getRequestContent());
             if(requestContent != null && requestContent.length() != 0) {
                 if (StringUtils.isNullOrEmpty(request.getMediaType())) {
                     if (requestContent.startsWith("0x0x")) {
-                        message.setPayload(requestContent.substring(2));
+                        actualRequestPayload = requestContent.substring(2).getBytes(Charset.forName("UTF-8"));
                     }
                     else if (requestContent.trim().startsWith("0x")) {
-                        byte[] bin;
                         try{
-                            bin = Utils.hexStringToBytes(requestContent.trim().substring(2));
+                            actualRequestPayload = Utils.hexStringToBytes(requestContent.trim().substring(2));
                         } catch (IllegalArgumentException e) {
                             throw new IllegalArgumentException(String.format("\"%s\" string could not be interpreted as a binary request content", Utils.limitStringLen(requestContent, 50)));
                         }
-                        message.setPayload(bin);
                     }
                     else {
-                        message.setPayload(requestContent);
+                        actualRequestPayload = requestContent.getBytes(Charset.forName("UTF-8"));
                     }
                 }
                 else{
                     Integer mediaTypeNumber = request.getContentFormatAsNumber();
                     if(MediaTypeRegistry.isPrintable(mediaTypeNumber)){
-                        message.setPayload(requestContent);
+                        actualRequestPayload = requestContent.getBytes(Charset.forName("UTF-8"));
                     }
                     else{
                         requestContent = requestContent.trim();
                         if(requestContent.startsWith("0x")) requestContent = requestContent.substring(2);
-                        byte[] bin;
                         try{
-                            bin = Utils.hexStringToBytes(requestContent);
+                            actualRequestPayload = Utils.hexStringToBytes(requestContent);
                         } catch (IllegalArgumentException e) {
                             throw new IllegalArgumentException(String.format("\"%s\" string could not be interpreted as a binary request content", Utils.limitStringLen(requestContent, 50)));
                         }
-                        message.setPayload(bin);
                     }
                 }
             }
+            message.setPayload(actualRequestPayload);
         }
 
         context.setProperty(REQUEST_CONTEXT_PROP, message);
@@ -233,7 +232,7 @@ public class CoapTransport implements RequestTransport {
 
         if(message.isCanceled()) throw new CoapSubmitFailureException("Request was canceled.");
         long takenTime = System.currentTimeMillis() - startTime;
-        if(responseMessage != null) return new CoapRespImpl(request, responseMessage, takenTime);
+        if(responseMessage != null) return new CoapRespImpl(request, actualRequestPayload, responseMessage, takenTime);
         if(message.isRejected()) throw new CoapSubmitFailureException("Request was rejected by the recepient.");
         if(message.isTimedOut()) throw new CoapSubmitFailureException("Request was not received within the MAX_TRANSMIT_WAIT period.");
         throw new CoapSubmitFailureException("Response was not received within the specified timeout.");
