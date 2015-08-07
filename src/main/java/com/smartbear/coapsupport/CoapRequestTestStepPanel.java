@@ -133,7 +133,7 @@ public class CoapRequestTestStepPanel extends AbstractHttpXmlRequestDesktopPanel
 
     @Override
     protected String getHelpUrl() {
-        return "";
+        return "https://smartbear.com/plugins/coap-test-steps-plugin-page";
     }
 
     @Override
