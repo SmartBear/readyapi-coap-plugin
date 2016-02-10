@@ -1,4 +1,12 @@
-# CoAP plugin
-CoAP Protocol Support Ready! API Plugin
+## Ready! API CoAP plugin
 
-Build: mvn clean install assembly:single
+Adds a CoAP TestStep to Ready! API functional testing - check out [Getting Started](https://smartbear.com/plugins/coap-test-steps-plugin-page/) 
+
+Build with 
+ 
+```
+mvn clean install assembly:single
+```
+
+
+
