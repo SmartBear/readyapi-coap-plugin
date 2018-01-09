@@ -208,7 +208,7 @@ public class CoapTransport implements RequestTransport {
             if(!isLogTabCreated){
                 Log4JMonitor logMonitor = SoapUI.getLogMonitor();
                 if(logMonitor != null) {
-                    logMonitor.addLogArea("CoAP log", PluginConfig.COAP_LOG, false);
+                    logMonitor.addLogArea("CoAP log", PluginConfig.COAP_LOG, false, true);
                     isLogTabCreated = true;
                 }
             }

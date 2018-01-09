@@ -256,7 +256,8 @@ public class CoapRequestTestStepPanel extends AbstractHttpXmlRequestDesktopPanel
             assertionInspector.setTitle("Assertions (" + getModelItem().getAssertionCount() + ")");
         }
 
-        public void assertionMoved(TestAssertion assertion, int ix, int offset) {
+        @Override
+        public void assertionMoved(TestAssertion testAssertion, int i) {
             assertionInspector.setTitle("Assertions (" + getModelItem().getAssertionCount() + ")");
         }
     }
