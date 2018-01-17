@@ -5,7 +5,7 @@
     <name>Ready! API CoAP Plugin</name>
     <artifactId>ready-coap-plugin</artifactId>
     <groupId>com.smartbear</groupId>
-    <version>1.0.0</version>
+    <version>1.0.1</version>
     <repositories>
 
         <repository>
