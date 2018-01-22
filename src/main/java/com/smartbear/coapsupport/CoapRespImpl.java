@@ -86,6 +86,10 @@ public class CoapRespImpl implements CoapResp {
         }
 
     }
+    @Override
+    public byte[] getRawResponseBody() {
+        return response.getPayload();
+    }
 
     @Override
     public String getMethod() {
