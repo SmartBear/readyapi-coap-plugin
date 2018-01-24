@@ -8,7 +8,7 @@ import com.eviware.soapui.support.UISupport;
 import org.eclipse.californium.core.network.config.NetworkConfig;
 
 @PluginConfiguration(groupId = "com.smartbear.plugins", name = "CoAP Support Plugin", version = "1.0.1",
-        autoDetect = true, description = "Adds CoAP Request test step to SoapUI NG",
+        autoDetect = true, description = "Adds CoAP Request test step to SoapUI",
         infoUrl = "", minimumReadyApiVersion = "2.2.0")
 public class PluginConfig extends PluginAdapter {
 
