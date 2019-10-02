@@ -21,7 +21,6 @@ import com.eviware.soapui.model.testsuite.TestCaseRunner;
 import com.eviware.soapui.monitor.support.TestMonitorListenerAdapter;
 import com.eviware.soapui.security.SecurityTestRunner;
 import com.eviware.soapui.support.DateUtil;
-import com.eviware.soapui.support.StringUtils;
 import com.eviware.soapui.support.UISupport;
 import com.eviware.soapui.support.components.JComponentInspector;
 import com.eviware.soapui.support.components.JInspectorPanel;
@@ -62,15 +61,17 @@ public class CoapRequestTestStepPanel extends AbstractHttpXmlRequestDesktopPanel
     private long startTime;
     private JButton addAssertionButton;
     private JUndoableTextField endpointEdit;
-    private JCheckBox confirmableCheckBox;
+    private JCheckBox confirmRequestCheckBox;
     private JComboBox<RestRequestInterface.HttpMethod> methodCombo;
 
     public CoapRequestTestStepPanel(CoapRequestTestStep modelItem) {
         super(modelItem, modelItem.getRequest());
+
         SoapUI.getTestMonitor().addTestMonitorListener(testMonitorListener);
         setEnabled(!SoapUI.getTestMonitor().hasRunningTest(getTestStep().getTestCase()));
+
         getTestStep().getTestRequest().addAssertionsListener(assertionsListener);
-        getRunButton().setEnabled(getSubmit() == null && StringUtils.hasContent(getRequest().getEndpoint()));
+        //getRunButton().setEnabled(getSubmit() == null && StringUtils.hasContent(getRequest().getEndpoint()));
     }
 
     private CoapRequestTestStep getTestStep(){return (CoapRequestTestStep) getModelItem();}
@@ -166,22 +167,17 @@ public class CoapRequestTestStepPanel extends AbstractHttpXmlRequestDesktopPanel
         }
     }
 
-    protected void insertButtons(JXToolBar toolbar) {
-        addAssertionButton = createActionButton(new AddAssertionAction(getRequest()), true);
-        toolbar.add(addAssertionButton);
-    }
-
     @Override
     protected JComponent buildToolbar() {
 
         JPanel panel = new JPanel(new BorderLayout());
-        panel.add(super.buildToolbar(), BorderLayout.NORTH);
+        panel.add(super.buildToolbar(), BorderLayout.WEST);
 
         JXToolBar toolbar = UISupport.createToolbar();
         addToolbarComponents(toolbar);
 
-        panel.add(toolbar, BorderLayout.EAST);
-        insertButtons(toolbar);
+        panel.add(toolbar, BorderLayout.CENTER);
+
         return panel;
 
     }
@@ -196,9 +192,12 @@ public class CoapRequestTestStepPanel extends AbstractHttpXmlRequestDesktopPanel
         toolbar.addLabeledFixed("Request Endpoint:", endpointEdit);
         PropertyExpansionPopupListener.enable(endpointEdit, getTestStep().getRequest());
 
-        confirmableCheckBox = new JCheckBox("Confirmable Request");
-        Bindings.bind(confirmableCheckBox, new PropertyAdapter<CoapRequest>(getTestStep().getRequest(), CoapRequest.CONFIRMABLE_BEAN_PROP));
-        toolbar.add(confirmableCheckBox);
+        confirmRequestCheckBox = new JCheckBox("Confirm Request");
+        Bindings.bind(confirmRequestCheckBox, new PropertyAdapter<CoapRequest>(getTestStep().getRequest(), CoapRequest.CONFIRMABLE_BEAN_PROP));
+        toolbar.add(confirmRequestCheckBox);
+
+        addAssertionButton = createActionButton(new AddAssertionAction(getRequest()), true);
+        toolbar.add(addAssertionButton);
     }
 
     @Override
@@ -213,7 +212,7 @@ public class CoapRequestTestStepPanel extends AbstractHttpXmlRequestDesktopPanel
         assertionsPanel.setEnabled(enabled);
         methodCombo.setEnabled(enabled);
         endpointEdit.setEnabled(enabled);
-        confirmableCheckBox.setEnabled(enabled);
+        confirmRequestCheckBox.setEnabled(enabled);
 
         if (SoapUI.getTestMonitor().hasRunningLoadTest(getRequest().getTestCase())
                 || SoapUI.getTestMonitor().hasRunningSecurityTest(getModelItem().getTestCase())) {
