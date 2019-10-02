@@ -15,8 +15,9 @@ import com.eviware.soapui.support.editor.views.AbstractXmlEditorView;
 import com.eviware.soapui.support.propertyexpansion.PropertyExpansionPopupListener;
 import com.eviware.soapui.support.xml.SyntaxEditorUtil;
 import com.eviware.soapui.support.xml.XmlUtils;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jgoodies.binding.beans.PropertyConnector;
-import net.sf.json.JSON;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 
 import javax.swing.JComponent;
@@ -29,6 +30,7 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.beans.PropertyChangeEvent;
+import java.io.IOException;
 
 import static com.eviware.soapui.support.JsonUtil.seemsToBeJsonContentType;
 
@@ -163,18 +165,14 @@ public class CoapRequestEditorView extends AbstractXmlEditorView<AbstractHttpXml
     }
 
     public void propertyChange(PropertyChangeEvent evt) {
-        if(component == null) return; //workaround on the bug in RAPI earlier than 1.4
+        if(component == null) {
+            return; //workaround on the bug in RAPI earlier than 1.4
+        }
         if (evt.getPropertyName().equals(AbstractHttpRequest.REQUEST_PROPERTY) && !updatingRequest) {
             updatingRequest = true;
             String requestBodyAsXml = (String) evt.getNewValue();
             String mediaType = request.getMediaType();
-            if (XmlUtils.seemsToBeXml(requestBodyAsXml) &&
-                    seemsToBeJsonContentType(mediaType)) {
-                JSON jsonObject = new JsonXmlSerializer().read(requestBodyAsXml);
-                contentEditor.setText(jsonObject.toString(3, 0));
-            } else {
-                contentEditor.setText(requestBodyAsXml);
-            }
+            contentEditor.setText(requestBodyAsXml);
             updatingRequest = false;
         }
         else if (evt.getPropertyName().equals("method")) {

@@ -3,29 +3,24 @@ package com.smartbear.coapsupport;
 import com.eviware.soapui.SoapUI;
 import com.eviware.soapui.impl.rest.RestRequestInterface;
 import com.eviware.soapui.impl.support.components.ModelItemXmlEditor;
-import com.eviware.soapui.impl.support.http.HttpRequest;
-import com.eviware.soapui.impl.support.http.HttpRequestContentView;
-import com.eviware.soapui.impl.support.http.HttpRequestContentViewFactory;
-import com.eviware.soapui.impl.support.http.HttpRequestInterface;
 import com.eviware.soapui.impl.support.panels.AbstractHttpRequestDesktopPanel;
 import com.eviware.soapui.impl.support.panels.AbstractHttpXmlRequestDesktopPanel;
 import com.eviware.soapui.impl.wsdl.panels.teststeps.AssertionsPanel;
-import com.eviware.soapui.impl.wsdl.panels.teststeps.HttpTestRequestDesktopPanel;
 import com.eviware.soapui.impl.wsdl.testcase.WsdlTestRunContext;
-import com.eviware.soapui.impl.wsdl.teststeps.HttpTestRequestStepInterface;
-import com.eviware.soapui.impl.wsdl.teststeps.RestTestRequestInterface;
 import com.eviware.soapui.impl.wsdl.teststeps.actions.AddAssertionAction;
 import com.eviware.soapui.model.ModelItem;
 import com.eviware.soapui.model.iface.Request;
 import com.eviware.soapui.model.iface.Submit;
 import com.eviware.soapui.model.iface.SubmitContext;
 import com.eviware.soapui.model.support.ModelSupport;
-import com.eviware.soapui.model.testsuite.*;
+import com.eviware.soapui.model.testsuite.Assertable;
+import com.eviware.soapui.model.testsuite.AssertionsListener;
+import com.eviware.soapui.model.testsuite.LoadTestRunner;
+import com.eviware.soapui.model.testsuite.TestAssertion;
+import com.eviware.soapui.model.testsuite.TestCaseRunner;
 import com.eviware.soapui.monitor.support.TestMonitorListenerAdapter;
 import com.eviware.soapui.security.SecurityTestRunner;
 import com.eviware.soapui.support.DateUtil;
-import com.eviware.soapui.support.ListDataChangeListener;
-import com.eviware.soapui.support.MessageSupport;
 import com.eviware.soapui.support.StringUtils;
 import com.eviware.soapui.support.UISupport;
 import com.eviware.soapui.support.components.JComponentInspector;
@@ -34,35 +29,21 @@ import com.eviware.soapui.support.components.JInspectorPanelFactory;
 import com.eviware.soapui.support.components.JUndoableTextField;
 import com.eviware.soapui.support.components.JXToolBar;
 import com.eviware.soapui.support.editor.EditorView;
-import com.eviware.soapui.support.editor.views.xml.outline.XmlOutlineEditorView;
-import com.eviware.soapui.support.editor.views.xml.outline.support.XmlObjectTree;
 import com.eviware.soapui.support.editor.views.xml.raw.RawXmlEditor;
 import com.eviware.soapui.support.editor.views.xml.raw.RawXmlEditorFactory;
 import com.eviware.soapui.support.editor.xml.XmlDocument;
 import com.eviware.soapui.support.log.JLogList;
 import com.eviware.soapui.support.propertyexpansion.PropertyExpansionPopupListener;
-import com.eviware.soapui.ui.desktop.DesktopPanel;
-import com.eviware.soapui.ui.support.ModelItemDesktopPanel;
-import com.jgoodies.binding.PresentationModel;
 import com.jgoodies.binding.adapter.Bindings;
 import com.jgoodies.binding.beans.PropertyAdapter;
 import com.jgoodies.binding.list.SelectionInList;
 
-
-import javax.swing.AbstractAction;
-import javax.swing.Action;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JComboBox;
 import javax.swing.JComponent;
-import javax.swing.JLabel;
 import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JSplitPane;
-import javax.swing.JTable;
-import javax.swing.ListModel;
-import javax.swing.table.AbstractTableModel;
 import java.awt.BorderLayout;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Date;
@@ -89,12 +70,12 @@ public class CoapRequestTestStepPanel extends AbstractHttpXmlRequestDesktopPanel
         SoapUI.getTestMonitor().addTestMonitorListener(testMonitorListener);
         setEnabled(!SoapUI.getTestMonitor().hasRunningTest(getTestStep().getTestCase()));
         getTestStep().getTestRequest().addAssertionsListener(assertionsListener);
-        getSubmitButton().setEnabled(getSubmit() == null && StringUtils.hasContent(getRequest().getEndpoint()));
-
+        getRunButton().setEnabled(getSubmit() == null && StringUtils.hasContent(getRequest().getEndpoint()));
     }
 
-
     private CoapRequestTestStep getTestStep(){return (CoapRequestTestStep) getModelItem();}
+
+    /*
     protected JComponent buildLogPanel() {
         logArea = new JLogList("Request Log");
 
@@ -106,7 +87,7 @@ public class CoapRequestTestStepPanel extends AbstractHttpXmlRequestDesktopPanel
         });
 
         return logArea;
-    }
+    }*/
 
     protected AssertionsPanel buildAssertionsPanel() {
         failedIcon = UISupport.createImageIcon("com/eviware/soapui/resources/images/failed_assertion.png");
@@ -155,7 +136,7 @@ public class CoapRequestTestStepPanel extends AbstractHttpXmlRequestDesktopPanel
 
         updateStatusIcon();
 
-        getSubmitButton().setEnabled(getSubmit() == null && StringUtils.hasContent(getRequest().getEndpoint()));
+        //getRunButton().setEnabled(getSubmit() == null && StringUtils.hasContent(getRequest().getEndpoint()));
 
         return inspectorPanel.getComponent();
     }
@@ -185,7 +166,6 @@ public class CoapRequestTestStepPanel extends AbstractHttpXmlRequestDesktopPanel
         }
     }
 
-    @Override
     protected void insertButtons(JXToolBar toolbar) {
         addAssertionButton = createActionButton(new AddAssertionAction(getRequest()), true);
         toolbar.add(addAssertionButton);
@@ -200,7 +180,8 @@ public class CoapRequestTestStepPanel extends AbstractHttpXmlRequestDesktopPanel
         JXToolBar toolbar = UISupport.createToolbar();
         addToolbarComponents(toolbar);
 
-        panel.add(toolbar, BorderLayout.SOUTH);
+        panel.add(toolbar, BorderLayout.EAST);
+        insertButtons(toolbar);
         return panel;
 
     }
@@ -240,6 +221,11 @@ public class CoapRequestTestStepPanel extends AbstractHttpXmlRequestDesktopPanel
         } else {
             getRequest().addSubmitListener(this);
         }
+    }
+
+    @Override
+    protected Submit doSubmit(boolean b) throws Request.SubmitException {
+        return doSubmit();
     }
 
     @Override
@@ -400,9 +386,6 @@ public class CoapRequestTestStepPanel extends AbstractHttpXmlRequestDesktopPanel
     }
 
     class CoapResponseEditor extends HttpResponseMessageEditor { //AbstractHttpRequestDesktopPanel.AbstractHttpResponseMessageEditor{
-//        public CoapResponseEditor(CoapRequest request) {
-//            super(new CoapResponseDocument(request));
-//        }
         public CoapResponseEditor(CoapRequest request) {
             super(request);
         }
@@ -424,5 +407,4 @@ public class CoapRequestTestStepPanel extends AbstractHttpXmlRequestDesktopPanel
 
         }
     }
-
 }
