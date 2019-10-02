@@ -9,7 +9,7 @@ import org.eclipse.californium.core.network.config.NetworkConfig;
 
 @PluginConfiguration(groupId = "com.smartbear.plugins", name = "CoAP Support Plugin", version = "1.0.1",
         autoDetect = true, description = "Adds CoAP Request test step to SoapUI",
-        infoUrl = "", minimumReadyApiVersion = "2.2.0")
+        infoUrl = "", minimumReadyApiVersion = "2.8.0")
 public class PluginConfig extends PluginAdapter {
 
     final static String COAP_LOG = "coap.log";
