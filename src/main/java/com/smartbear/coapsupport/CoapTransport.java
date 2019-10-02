@@ -1,10 +1,5 @@
 package com.smartbear.coapsupport;
 
-import com.eviware.soapui.support.log.Log4JMonitor;
-import org.eclipse.californium.core.coap.CoAP;
-import org.eclipse.californium.core.coap.MediaTypeRegistry;
-import org.eclipse.californium.core.coap.Option;
-import org.eclipse.californium.core.coap.Request;
 import com.eviware.soapui.SoapUI;
 import com.eviware.soapui.impl.rest.support.RestParamProperty;
 import com.eviware.soapui.impl.rest.support.RestParamsPropertyHolder;
@@ -13,18 +8,19 @@ import com.eviware.soapui.impl.wsdl.submit.RequestTransport;
 import com.eviware.soapui.model.iface.Response;
 import com.eviware.soapui.model.iface.SubmitContext;
 import com.eviware.soapui.model.propertyexpansion.PropertyExpander;
-import com.eviware.soapui.plugins.auto.PluginRequestTransport;
 import com.eviware.soapui.support.StringUtils;
+import com.eviware.soapui.support.log.Log4JMonitor;
 import com.eviware.soapui.support.types.StringList;
+import org.eclipse.californium.core.coap.CoAP;
+import org.eclipse.californium.core.coap.MediaTypeRegistry;
+import org.eclipse.californium.core.coap.Option;
+import org.eclipse.californium.core.coap.Request;
 import org.eclipse.californium.core.network.Endpoint;
 import org.eclipse.californium.core.network.EndpointManager;
-import org.eclipse.californium.core.network.interceptors.MessageInterceptor;
-import org.eclipse.californium.core.network.interceptors.MessageTracer;
 
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Logger;
 
 import static com.eviware.soapui.impl.support.HttpUtils.urlEncodeWithUtf8;
 

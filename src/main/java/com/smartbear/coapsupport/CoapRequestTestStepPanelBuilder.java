@@ -1,7 +1,6 @@
 package com.smartbear.coapsupport;
 
 import com.eviware.soapui.impl.EmptyPanelBuilder;
-import com.eviware.soapui.impl.wsdl.teststeps.HttpTestRequestInterface;
 import com.eviware.soapui.plugins.auto.PluginPanelBuilder;
 import com.eviware.soapui.support.components.JPropertiesTable;
 import com.eviware.soapui.ui.desktop.DesktopPanel;

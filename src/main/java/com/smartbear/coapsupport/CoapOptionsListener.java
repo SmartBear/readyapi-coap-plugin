@@ -1,7 +1,5 @@
 package com.smartbear.coapsupport;
 
-import java.util.List;
-
 public interface CoapOptionsListener {
     void onOptionChanged(int optionIndex, int oldOptionNumber, int newOptionNumber, String oldOptionValue, String newOptionValue);
     void onOptionAdded(int optionIndex, int optionNumber, String optionValue);

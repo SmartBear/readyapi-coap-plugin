@@ -1,8 +1,5 @@
 package com.smartbear.coapsupport;
 
-
-import org.eclipse.californium.core.coap.Option;
-
 import javax.validation.constraints.NotNull;
 
 public interface CoapOptionsDataSource {

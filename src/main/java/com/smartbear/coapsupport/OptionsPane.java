@@ -11,7 +11,6 @@ import com.eviware.x.form.XFormFieldListener;
 import com.eviware.x.form.XFormFieldValidator;
 import com.eviware.x.form.XFormOptionsField;
 import com.eviware.x.form.support.ADialogBuilder;
-import org.eclipse.californium.core.coap.OptionNumberRegistry;
 
 import javax.swing.AbstractAction;
 import javax.swing.Action;
@@ -316,5 +315,4 @@ public class OptionsPane extends JPanel {
             setEnabled(isActionOnSelectedOptionAllowed() && grid.getSelectionModel().getLeadSelectionIndex() >= 0 && grid.getSelectionModel().getLeadSelectionIndex() != grid.getRowCount() - 1);
         }
     }
-
 }

@@ -156,6 +156,4 @@ public class CoapResponseEditorView extends AbstractXmlEditorView<AbstractHttpXm
             return new String(rawResponseData);
         }
     }
-
-
 }

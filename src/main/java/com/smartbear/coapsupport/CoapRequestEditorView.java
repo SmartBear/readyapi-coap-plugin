@@ -4,7 +4,6 @@ import com.eviware.soapui.impl.rest.actions.support.NewRestResourceActionBase;
 import com.eviware.soapui.impl.rest.panels.resource.RestParamsTable;
 import com.eviware.soapui.impl.rest.panels.resource.RestParamsTableModel;
 import com.eviware.soapui.impl.rest.support.RestParamProperty;
-import com.eviware.soapui.impl.rest.support.handlers.JsonXmlSerializer;
 import com.eviware.soapui.impl.support.AbstractHttpRequest;
 import com.eviware.soapui.impl.support.http.HttpRequest;
 import com.eviware.soapui.impl.support.panels.AbstractHttpXmlRequestDesktopPanel;
@@ -14,10 +13,7 @@ import com.eviware.soapui.support.editor.Editor;
 import com.eviware.soapui.support.editor.views.AbstractXmlEditorView;
 import com.eviware.soapui.support.propertyexpansion.PropertyExpansionPopupListener;
 import com.eviware.soapui.support.xml.SyntaxEditorUtil;
-import com.eviware.soapui.support.xml.XmlUtils;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jgoodies.binding.beans.PropertyConnector;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.fife.ui.rsyntaxtextarea.RSyntaxTextArea;
 
 import javax.swing.JComponent;
@@ -30,12 +26,9 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.beans.PropertyChangeEvent;
-import java.io.IOException;
-
-import static com.eviware.soapui.support.JsonUtil.seemsToBeJsonContentType;
 
 @PluginRequestEditorView(viewId = CoapRequestEditorView.VIEW_ID, targetClass = CoapRequest.class)
-public class CoapRequestEditorView extends AbstractXmlEditorView<AbstractHttpXmlRequestDesktopPanel.HttpRequestDocument>{
+public class CoapRequestEditorView extends AbstractXmlEditorView<AbstractHttpXmlRequestDesktopPanel.HttpRequestDocument> {
     private JComponent component = null;
     private CoapRequest request;
     private RSyntaxTextArea contentEditor;
@@ -60,7 +53,7 @@ public class CoapRequestEditorView extends AbstractXmlEditorView<AbstractHttpXml
 
     @Override
     public JComponent getComponent() {
-        if(component == null){
+        if (component == null) {
 
             JPanel mainPanel = new JPanel(new GridBagLayout());
             paramsTable = buildParamsTable();
@@ -165,7 +158,7 @@ public class CoapRequestEditorView extends AbstractXmlEditorView<AbstractHttpXml
     }
 
     public void propertyChange(PropertyChangeEvent evt) {
-        if(component == null) {
+        if (component == null) {
             return; //workaround on the bug in RAPI earlier than 1.4
         }
         if (evt.getPropertyName().equals(AbstractHttpRequest.REQUEST_PROPERTY) && !updatingRequest) {
@@ -174,11 +167,9 @@ public class CoapRequestEditorView extends AbstractXmlEditorView<AbstractHttpXml
             String mediaType = request.getMediaType();
             contentEditor.setText(requestBodyAsXml);
             updatingRequest = false;
-        }
-        else if (evt.getPropertyName().equals("method")) {
+        } else if (evt.getPropertyName().equals("method")) {
             bodyExpander.setVisible(request.hasRequestBody());
-        }
-        else if (evt.getPropertyName().equals(HttpRequest.MEDIA_TYPE)) {
+        } else if (evt.getPropertyName().equals(HttpRequest.MEDIA_TYPE)) {
             SyntaxEditorUtil.setMediaType(contentEditor, request.getMediaType());
         }
         super.propertyChange(evt);
@@ -193,5 +184,4 @@ public class CoapRequestEditorView extends AbstractXmlEditorView<AbstractHttpXml
         request.removePropertyChangeListener(this);
         paramsTable.release();
     }
-
 }

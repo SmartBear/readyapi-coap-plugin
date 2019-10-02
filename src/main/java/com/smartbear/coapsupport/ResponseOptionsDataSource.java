@@ -1,9 +1,7 @@
 package com.smartbear.coapsupport;
 
 import org.eclipse.californium.core.coap.Option;
-import org.eclipse.californium.core.coap.OptionNumberRegistry;
 import org.eclipse.californium.core.coap.Response;
-
 
 import java.util.ArrayList;
 import java.util.List;
@@ -11,7 +9,7 @@ import java.util.List;
 public class ResponseOptionsDataSource implements CoapOptionsDataSource {
     private List<Option> options = new ArrayList<>();
 
-    public ResponseOptionsDataSource(Response message){
+    public ResponseOptionsDataSource(Response message) {
         options = message.getOptions().asSortedList();
     }
 
@@ -28,11 +26,16 @@ public class ResponseOptionsDataSource implements CoapOptionsDataSource {
     @Override
     public String getOptionValue(int optionIndex) {
         Option option = options.get(optionIndex);
-        switch (OptionsSupport.getOptionType(option.getNumber())){
+        switch (OptionsSupport.getOptionType(option.getNumber())) {
             case String:
                 return option.getStringValue();
-            case Opaque: case Unknown: case Uint: case Empty:
-                if(option.getValue() == null || option.getValue().length == 0) return "";
+            case Opaque:
+            case Unknown:
+            case Uint:
+            case Empty:
+                if (option.getValue() == null || option.getValue().length == 0) {
+                    return "";
+                }
                 return "0x" + Utils.bytesToHexString(option.getValue());
         }
         throw new IllegalArgumentException();
@@ -67,6 +70,4 @@ public class ResponseOptionsDataSource implements CoapOptionsDataSource {
     public void removeOptionsListener(CoapOptionsListener listener) {
 
     }
-
-
 }

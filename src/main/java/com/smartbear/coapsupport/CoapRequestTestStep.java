@@ -1,34 +1,16 @@
 package com.smartbear.coapsupport;
 
-import com.eviware.soapui.config.AbstractRequestConfig;
 import com.eviware.soapui.config.HttpRequestConfig;
-import com.eviware.soapui.config.SettingConfig;
-import com.eviware.soapui.config.SettingsConfig;
 import com.eviware.soapui.config.TestStepConfig;
 import com.eviware.soapui.impl.rest.RestRequestInterface;
-import com.eviware.soapui.impl.rest.support.RestParamProperty;
 import com.eviware.soapui.impl.support.AbstractHttpRequestInterface;
 import com.eviware.soapui.impl.wsdl.testcase.WsdlTestCase;
 import com.eviware.soapui.impl.wsdl.teststeps.HttpTestRequest;
-import com.eviware.soapui.impl.wsdl.teststeps.HttpTestRequestInterface;
 import com.eviware.soapui.impl.wsdl.teststeps.HttpTestRequestStep;
-import com.eviware.soapui.impl.wsdl.teststeps.WsdlTestStepResult;
-import com.eviware.soapui.impl.wsdl.teststeps.WsdlTestStepWithProperties;
-import com.eviware.soapui.model.ModelItem;
 import com.eviware.soapui.model.support.DefaultTestStepProperty;
 import com.eviware.soapui.model.support.TestStepBeanProperty;
-import com.eviware.soapui.model.testsuite.TestCaseRunContext;
-import com.eviware.soapui.model.testsuite.TestCaseRunner;
-import com.eviware.soapui.model.testsuite.TestProperty;
-import com.eviware.soapui.model.testsuite.TestStep;
-import com.eviware.soapui.model.testsuite.TestStepProperty;
-import com.eviware.soapui.model.testsuite.TestStepResult;
 import com.eviware.soapui.plugins.auto.PluginTestStep;
-import com.eviware.soapui.support.UISupport;
-import com.eviware.soapui.support.xml.XmlObjectConfigurationReader;
-import org.apache.xmlbeans.SchemaType;
-import org.apache.xmlbeans.XmlObject;
-import javax.xml.namespace.QName;
+
 import java.beans.PropertyChangeEvent;
 
 @PluginTestStep(typeName = "CoapRequestTestStep", name = "CoAP Request", description = "Sends a request using the CoAP protocol.", iconPath = "com/smartbear/coapsupport/coap_request_step.png")

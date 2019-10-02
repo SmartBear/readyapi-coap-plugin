@@ -8,7 +8,6 @@ import org.eclipse.californium.core.coap.Option;
 import org.eclipse.californium.core.coap.OptionNumberRegistry;
 
 import javax.swing.AbstractCellEditor;
-import javax.swing.ComboBoxEditor;
 import javax.swing.JComboBox;
 import javax.swing.JTable;
 import javax.swing.JTextField;
@@ -19,7 +18,6 @@ import javax.swing.table.TableCellRenderer;
 import java.awt.Component;
 import java.awt.event.FocusEvent;
 import java.awt.event.KeyEvent;
-
 
 public class OptionsSupport {
 
@@ -503,5 +501,4 @@ public class OptionsSupport {
             return "0x" + Utils.bytesToHexString(value);
         }
     }
-
 }

@@ -1,7 +1,6 @@
 package com.smartbear.coapsupport;
 
 import org.apache.log4j.Logger;
-import org.apache.log4j.Priority;
 import org.eclipse.californium.core.coap.EmptyMessage;
 import org.eclipse.californium.core.coap.Message;
 import org.eclipse.californium.core.coap.Request;
