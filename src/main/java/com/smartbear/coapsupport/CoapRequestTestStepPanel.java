@@ -20,6 +20,7 @@ import com.eviware.soapui.model.testsuite.TestAssertion;
 import com.eviware.soapui.model.testsuite.TestCaseRunner;
 import com.eviware.soapui.monitor.support.TestMonitorListenerAdapter;
 import com.eviware.soapui.security.SecurityTestRunner;
+import com.eviware.soapui.settings.UISettings;
 import com.eviware.soapui.support.DateUtil;
 import com.eviware.soapui.support.UISupport;
 import com.eviware.soapui.support.components.JComponentInspector;
@@ -37,6 +38,7 @@ import com.jgoodies.binding.adapter.Bindings;
 import com.jgoodies.binding.beans.PropertyAdapter;
 import com.jgoodies.binding.list.SelectionInList;
 
+import com.smartbear.ready.core.ApplicationEnvironment;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
@@ -54,9 +56,7 @@ public class CoapRequestTestStepPanel extends AbstractHttpXmlRequestDesktopPanel
     private AssertionsPanel assertionsPanel;
     private JComponentInspector<JComponent> assertionInspector;
     private JComponentInspector<JComponent> logInspector;
-    private ImageIcon failedIcon;
     private ImageIcon unknownStatusIcon;
-    private ImageIcon successIcon;
     private InternalAssertionsListener assertionsListener = new InternalAssertionsListener();
     private long startTime;
     private JButton addAssertionButton;
@@ -74,7 +74,9 @@ public class CoapRequestTestStepPanel extends AbstractHttpXmlRequestDesktopPanel
         //getRunButton().setEnabled(getSubmit() == null && StringUtils.hasContent(getRequest().getEndpoint()));
     }
 
-    private CoapRequestTestStep getTestStep(){return (CoapRequestTestStep) getModelItem();}
+    private CoapRequestTestStep getTestStep() {
+        return (CoapRequestTestStep) getModelItem();
+    }
 
     /*
     protected JComponent buildLogPanel() {
@@ -91,9 +93,7 @@ public class CoapRequestTestStepPanel extends AbstractHttpXmlRequestDesktopPanel
     }*/
 
     protected AssertionsPanel buildAssertionsPanel() {
-        failedIcon = UISupport.createImageIcon("com/eviware/soapui/resources/images/failed_assertion.png");
         unknownStatusIcon = UISupport.createImageIcon("com/eviware/soapui/resources/images/unknown_assertion.png");
-        successIcon = UISupport.createImageIcon("com/eviware/soapui/resources/images/valid_assertion.png");
         return new AssertionsPanel(getRequest()) {
             @Override
             protected void selectError(com.eviware.soapui.model.testsuite.AssertionError error) {
@@ -149,9 +149,14 @@ public class CoapRequestTestStepPanel extends AbstractHttpXmlRequestDesktopPanel
 
     protected void updateStatusIcon() {
         Assertable.AssertionStatus status = getModelItem().getTestRequest().getAssertionStatus();
+        boolean isColorBlindMode = ApplicationEnvironment.getSettings().getBoolean(UISettings.COLOR_BLIND_MODE);
         switch (status) {
             case FAILED: {
-                assertionInspector.setIcon(failedIcon);
+                if (isColorBlindMode) {
+                    assertionInspector.setIcon(UISupport.createImageIcon("com/eviware/soapui/resources/images/failed_assertion_color_blind.png"));
+                } else {
+                    assertionInspector.setIcon(UISupport.createImageIcon("com/eviware/soapui/resources/images/failed_assertion.png"));
+                }
                 inspectorPanel.activate(assertionInspector);
                 break;
             }
@@ -160,7 +165,11 @@ public class CoapRequestTestStepPanel extends AbstractHttpXmlRequestDesktopPanel
                 break;
             }
             case VALID: {
-                assertionInspector.setIcon(successIcon);
+                if (isColorBlindMode) {
+                    assertionInspector.setIcon(UISupport.createImageIcon("com/eviware/soapui/resources/images/valid_assertion_color_blind.png"));
+                } else {
+                    assertionInspector.setIcon(UISupport.createImageIcon("com/eviware/soapui/resources/images/valid_assertion.png"));
+                }
                 inspectorPanel.deactivate();
                 break;
             }
@@ -258,7 +267,7 @@ public class CoapRequestTestStepPanel extends AbstractHttpXmlRequestDesktopPanel
 
     @Override
     protected void logMessages(String message, String infoMessage) {
-        if(disableMessageLogging) return;
+        if (disableMessageLogging) return;
         super.logMessages(message, infoMessage);
         logArea.addLine(DateUtil.formatFull(new Date(startTime)) + " - " + message);
     }
@@ -268,20 +277,18 @@ public class CoapRequestTestStepPanel extends AbstractHttpXmlRequestDesktopPanel
         if (submit.getRequest() != getRequest()) {
             return;
         }
-        if(submit.getStatus() == Submit.Status.ERROR && submit.getError() instanceof InvocationTargetException){
+        if (submit.getStatus() == Submit.Status.ERROR && submit.getError() instanceof InvocationTargetException) {
             disableMessageLogging = true;
             try {
                 super.afterSubmit(submit, context);
-            }
-            finally {
+            } finally {
                 disableMessageLogging = false;
             }
             String actualError = ((InvocationTargetException) submit.getError()).getTargetException().getMessage();
             String msg = String.format("Error getting response: %s", actualError);
             String infoMsg = "Error getting response for [" + submit.getRequest().getName() + "]; " + actualError;
             logMessages(msg, infoMsg);
-        }
-        else{
+        } else {
             super.afterSubmit(submit, context);
         }
         if (!isHasClosed()) {
@@ -365,7 +372,7 @@ public class CoapRequestTestStepPanel extends AbstractHttpXmlRequestDesktopPanel
     }
 
 
-    class CoapRequestEditor extends AbstractHttpRequestDesktopPanel<CoapRequestTestStep, CoapRequest>.AbstractHttpRequestMessageEditor<HttpRequestDocument>{
+    class CoapRequestEditor extends AbstractHttpRequestDesktopPanel<CoapRequestTestStep, CoapRequest>.AbstractHttpRequestMessageEditor<HttpRequestDocument> {
 
         public CoapRequestEditor(CoapRequest request) {
             super(new HttpRequestDocument(request));
@@ -373,7 +380,7 @@ public class CoapRequestTestStepPanel extends AbstractHttpXmlRequestDesktopPanel
 
         @Override
         public void addEditorView(EditorView editorView) {
-            if(getView(editorView.getViewId()) != null) return;
+            if (getView(editorView.getViewId()) != null) return;
             super.addEditorView(editorView);
         }
 
@@ -391,12 +398,11 @@ public class CoapRequestTestStepPanel extends AbstractHttpXmlRequestDesktopPanel
 
         @Override
         public void addEditorView(EditorView editorView) {
-            if(getView(editorView.getViewId()) != null) return;
-            if(RawXmlEditorFactory.VIEW_ID.equals(editorView.getViewId())){
-                CoapResponseEditorView coapResponseView = new CoapResponseEditorView(this, getRequest(), RawXmlEditorFactory.VIEW_ID, (RawXmlEditor < XmlDocument >) editorView);
+            if (getView(editorView.getViewId()) != null) return;
+            if (RawXmlEditorFactory.VIEW_ID.equals(editorView.getViewId())) {
+                CoapResponseEditorView coapResponseView = new CoapResponseEditorView(this, getRequest(), RawXmlEditorFactory.VIEW_ID, (RawXmlEditor<XmlDocument>) editorView);
                 super.addEditorView(coapResponseView);
-            }
-            else {
+            } else {
                 super.addEditorView(editorView);
             }
         }

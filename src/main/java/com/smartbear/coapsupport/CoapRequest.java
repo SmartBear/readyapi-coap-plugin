@@ -3,6 +3,8 @@ package com.smartbear.coapsupport;
 
 import com.eviware.soapui.impl.wsdl.submit.transports.http.HttpResponse;
 import com.eviware.soapui.model.iface.SubmitContext;
+import com.eviware.soapui.settings.UISettings;
+import com.smartbear.ready.core.ApplicationEnvironment;
 import org.eclipse.californium.core.coap.MediaTypeRegistry;
 import com.eviware.soapui.SoapUI;
 import com.eviware.soapui.config.HttpRequestConfig;
@@ -37,8 +39,6 @@ public class CoapRequest extends HttpTestRequest implements CoapOptionsDataSourc
     public static final String AUTO_SIZE1_BEAN_PROP = "autoSize1";
 
     private CoapRequestTestStep testStep;
-    private ImageIcon validRequestIcon;
-    private ImageIcon failedRequestIcon;
     private ImageIcon unknownRequestIcon;
     private ImageIcon disabledRequestIcon;
     private boolean forLoadTest;
@@ -54,8 +54,6 @@ public class CoapRequest extends HttpTestRequest implements CoapOptionsDataSourc
 
     @Override
     protected void initIcons() {
-        validRequestIcon = UISupport.createImageIcon("com/smartbear/coapsupport/valid_coap_request_step.png");
-        failedRequestIcon = UISupport.createImageIcon("com/smartbear/coapsupport/invalid_coap_request_step.png");
         unknownRequestIcon = UISupport.createImageIcon("com/smartbear/coapsupport/coap_request_step.png");
         disabledRequestIcon = UISupport.createImageIcon("com/smartbear/coapsupport/disabled_coap_request_step.png");
 
@@ -77,11 +75,20 @@ public class CoapRequest extends HttpTestRequest implements CoapOptionsDataSourc
 
         ImageIcon icon = getIconAnimator().getIcon();
         if (icon == getIconAnimator().getBaseIcon()) {
+            boolean isColorBlindMode = ApplicationEnvironment.getSettings().getBoolean(UISettings.COLOR_BLIND_MODE);
             AssertionStatus status = getAssertionStatus();
             if (status == AssertionStatus.VALID) {
-                return validRequestIcon;
+                if (isColorBlindMode) {
+                    return UISupport.createImageIcon("com/smartbear/coapsupport/valid_coap_request_step_color_blind.png");
+                } else {
+                    return UISupport.createImageIcon("com/smartbear/coapsupport/valid_coap_request_step.png");
+                }
             } else if (status == AssertionStatus.FAILED) {
-                return failedRequestIcon;
+                if (isColorBlindMode) {
+                    return UISupport.createImageIcon("com/smartbear/coapsupport/invalid_coap_request_step_color_blind.png");
+                } else {
+                    return UISupport.createImageIcon("com/smartbear/coapsupport/invalid_coap_request_step.png");
+                }
             } else if (status == AssertionStatus.UNKNOWN) {
                 return unknownRequestIcon;
             }
