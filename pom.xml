@@ -5,7 +5,7 @@
     <name>ReadyAPI CoAP Plugin</name>
     <artifactId>ready-coap-plugin</artifactId>
     <groupId>com.smartbear</groupId>
-    <version>1.0.2</version>
+    <version>1.0.3</version>
     <repositories>
         <repository>
             <id>SoapUI_M2</id>
